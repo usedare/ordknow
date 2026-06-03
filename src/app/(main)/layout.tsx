@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logout } from "../(auth)/login/actions";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function MainLayout({
   children,
@@ -58,7 +59,8 @@ export default function MainLayout({
           </Link>
         </nav>
 
-        <div className="p-2 border-t border-border">
+        <div className="p-2 border-t border-border space-y-1">
+          <ThemeToggle />
           <form action={logout}>
             <button
               type="submit"

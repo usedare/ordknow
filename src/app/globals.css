@@ -11,6 +11,23 @@
   --ring: #171717;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
+  --card: #ffffff;
+  --card-foreground: #171717;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #ededed;
+  --primary-foreground: #0a0a0a;
+  --muted: #1a1a1a;
+  --muted-foreground: #a0a0a0;
+  --border: #2a2a2a;
+  --ring: #ededed;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafafa;
+  --card: #1a1a1a;
+  --card-foreground: #ededed;
 }
 
 @theme inline {
@@ -24,6 +41,8 @@
   --color-ring: var(--ring);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --radius: 0.5rem;
 }
 

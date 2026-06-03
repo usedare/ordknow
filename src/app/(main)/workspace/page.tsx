@@ -9,6 +9,8 @@ import { KnowledgePanel } from "@/components/workspace/knowledge-panel";
 import { ViewToggle } from "@/components/workspace/view-toggle";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { SearchDialog } from "@/components/ui/search-dialog";
+import { Search } from "lucide-react";
 
 export default function WorkspacePage() {
   const { toast } = useToast();
@@ -20,6 +22,7 @@ export default function WorkspacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isSystematizing, setIsSystematizing] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const fetchMaterials = useCallback(async () => {
     const res = await fetch("/api/materials");
@@ -163,9 +166,14 @@ export default function WorkspacePage() {
   }
 
   return (
+    <div className="h-full">
     <WorkspaceLayout
       toolbar={
         <>
+          <Button size="sm" variant="outline" onClick={() => setIsSearchOpen(true)}>
+            <Search className="w-4 h-4 mr-1" />
+            搜索
+          </Button>
           <Button size="sm" onClick={handleSystematize} disabled={isSystematizing}>
             {isSystematizing ? "体系化中..." : "一键体系化"}
           </Button>
@@ -197,5 +205,14 @@ export default function WorkspacePage() {
         )
       }
     />
+    <SearchDialog
+      isOpen={isSearchOpen}
+      onClose={() => setIsSearchOpen(false)}
+      onMaterialSelect={(id) => {
+        const material = materials.find((m) => m.id === id);
+        if (material) handleSelectMaterial(material);
+      }}
+    />
+    </div>
   );
 }

@@ -20,6 +20,9 @@ export function SettingsPage() {
   const [selectedModel, setSelectedModel] = useState("deepseek-chat");
   const [isExporting, setIsExporting] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [autoReconstruct, setAutoReconstruct] = useState(false);
+  const [reconstructInterval, setReconstructInterval] = useState("daily");
+  const [lastReconstruct, setLastReconstruct] = useState<string>("");
 
   useEffect(() => {
     // Load saved settings
@@ -27,6 +30,9 @@ export function SettingsPage() {
     setJinaKey(localStorage.getItem("ordknow_jina_key") || "");
     setMimoKey(localStorage.getItem("ordknow_mimo_key") || "");
     setSelectedModel(localStorage.getItem("ordknow_model") || "deepseek-chat");
+    setAutoReconstruct(localStorage.getItem("ordknow_auto_reconstruct") === "true");
+    setReconstructInterval(localStorage.getItem("ordknow_reconstruct_interval") || "daily");
+    setLastReconstruct(localStorage.getItem("ordknow_last_reconstruct") || "");
   }, []);
 
   const handleSave = () => {
@@ -34,6 +40,8 @@ export function SettingsPage() {
     localStorage.setItem("ordknow_jina_key", jinaKey);
     localStorage.setItem("ordknow_mimo_key", mimoKey);
     localStorage.setItem("ordknow_model", selectedModel);
+    localStorage.setItem("ordknow_auto_reconstruct", String(autoReconstruct));
+    localStorage.setItem("ordknow_reconstruct_interval", reconstructInterval);
     setSaveMessage("配置已保存");
     setTimeout(() => setSaveMessage(null), 2000);
   };
@@ -55,6 +63,27 @@ export function SettingsPage() {
       }
     } catch (err) {
       console.error("Export failed:", err);
+    }
+    setIsExporting(false);
+  };
+
+  const handleMarkdownExport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch("/api/export/markdown");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ordknow-knowledge-${new Date().toISOString().split("T")[0]}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Markdown export failed:", err);
     }
     setIsExporting(false);
   };
@@ -163,10 +192,54 @@ export function SettingsPage() {
             导出你的所有素材和知识体系数据。
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           <Button variant="outline" onClick={handleExport} disabled={isExporting}>
             {isExporting ? "导出中..." : "导出 JSON"}
           </Button>
+          <Button variant="outline" onClick={handleMarkdownExport} disabled={isExporting}>
+            导出 Markdown
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Privacy */}
+      <Card>
+        <CardHeader>
+          <CardTitle>自动重构</CardTitle>
+          <CardDescription>
+            设置知识体系自动重构的频率。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="auto-reconstruct"
+              checked={autoReconstruct}
+              onChange={(e) => setAutoReconstruct(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="auto-reconstruct" className="text-sm">
+              启用自动重构
+            </label>
+          </div>
+          {autoReconstruct && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">重构频率</label>
+              <select
+                value={reconstructInterval}
+                onChange={(e) => setReconstructInterval(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-background"
+              >
+                <option value="hourly">每小时</option>
+                <option value="daily">每天</option>
+                <option value="weekly">每周</option>
+              </select>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            启用后，系统会在指定间隔自动触发知识体系重构。上次重构：{lastReconstruct || "从未"}
+          </p>
         </CardContent>
       </Card>
 

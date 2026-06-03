@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { KnowledgeTopic, KnowledgeNode, Material } from "@/types";
+import { KnowledgeTopic, KnowledgeNode, KnowledgeEdge, Material } from "@/types";
 import { KnowledgeTree } from "@/components/knowledge/knowledge-tree";
 import { KnowledgeNodeDetail } from "@/components/knowledge/knowledge-node-detail";
+import { KnowledgeGraph } from "@/components/knowledge/knowledge-graph";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, AlertTriangle, Info } from "lucide-react";
+import { Activity, AlertTriangle, Info, GitBranch } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 interface HealthIssue {
@@ -27,19 +28,34 @@ interface HealthReport {
 export default function KnowledgePage() {
   const { toast } = useToast();
   const [topics, setTopics] = useState<Array<KnowledgeTopic & { children?: Array<KnowledgeTopic & { nodes?: KnowledgeNode[] }> }>>([]);
+  const [allNodes, setAllNodes] = useState<KnowledgeNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
   const [sourceMaterials, setSourceMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSystematizing, setIsSystematizing] = useState(false);
   const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [edges, setEdges] = useState<KnowledgeEdge[]>([]);
+  const [viewMode, setViewMode] = useState<"tree" | "graph">("tree");
 
   const fetchKnowledge = useCallback(async () => {
     try {
-      const res = await fetch("/api/knowledge");
-      if (res.ok) {
-        const data = await res.json();
+      const [topicsRes, edgesRes, nodesRes] = await Promise.all([
+        fetch("/api/knowledge"),
+        fetch("/api/knowledge/edges/all"),
+        fetch("/api/knowledge/nodes/all"),
+      ]);
+      if (topicsRes.ok) {
+        const data = await topicsRes.json();
         setTopics(data);
+      }
+      if (edgesRes.ok) {
+        const data = await edgesRes.json();
+        setEdges(data);
+      }
+      if (nodesRes.ok) {
+        const data = await nodesRes.json();
+        setAllNodes(data);
       }
     } catch (err) {
       console.error("Failed to fetch knowledge:", err);
@@ -106,6 +122,12 @@ export default function KnowledgePage() {
     }
   };
 
+  const handleNodeUpdate = (updated: KnowledgeNode) => {
+    setSelectedNode(updated);
+    // Refresh the knowledge tree
+    fetchKnowledge();
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -122,6 +144,15 @@ export default function KnowledgePage() {
             <h2 className="font-semibold">知识体系</h2>
             <Button size="sm" onClick={handleSystematize} disabled={isSystematizing}>
               {isSystematizing ? "体系化中..." : "一键体系化"}
+            </Button>
+          </div>
+          <div className="flex gap-1 mb-2">
+            <Button size="sm" variant={viewMode === "tree" ? "default" : "outline"} onClick={() => setViewMode("tree")} className="flex-1">
+              树状
+            </Button>
+            <Button size="sm" variant={viewMode === "graph" ? "default" : "outline"} onClick={() => setViewMode("graph")} className="flex-1">
+              <GitBranch className="w-3.5 h-3.5 mr-1" />
+              图谱
             </Button>
           </div>
           <Button size="sm" variant="outline" onClick={handleHealthCheck} disabled={isChecking} className="w-full">
@@ -158,13 +189,17 @@ export default function KnowledgePage() {
         )}
 
         <div className="flex-1 overflow-auto p-2">
-          <KnowledgeTree topics={topics} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNode?.id} />
+          {viewMode === "tree" ? (
+            <KnowledgeTree topics={topics} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNode?.id} />
+          ) : (
+            <KnowledgeGraph nodes={allNodes} edges={edges} onNodeClick={handleNodeSelect} />
+          )}
         </div>
       </div>
 
       <div className="flex-1 overflow-auto p-6">
         {selectedNode ? (
-          <KnowledgeNodeDetail node={selectedNode} sourceMaterials={sourceMaterials} onNodeSelect={handleNodeSelect} />
+          <KnowledgeNodeDetail node={selectedNode} sourceMaterials={sourceMaterials} onNodeSelect={handleNodeSelect} onNodeUpdate={handleNodeUpdate} />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">选择一个知识节点查看详情</div>
         )}
