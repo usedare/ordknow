@@ -1,0 +1,7 @@
+[     126ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:4002/login:0
+[     127ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:4002/login:0
+[     196ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4002/favicon.ico:0
+[   57510ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:4002/api/materials:0
+[   58965ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:4002/api/knowledge:0
+[  114073ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:4002/api/materials:0
+[  231836ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:4002/api/materials:0

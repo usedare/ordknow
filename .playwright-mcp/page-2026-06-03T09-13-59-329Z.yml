@@ -1,0 +1,60 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - heading "序知" [level=1] [ref=e5]
+        - paragraph [ref=e6]: 个人知识体系
+      - navigation [ref=e7]:
+        - link "工作台" [ref=e8] [cursor=pointer]:
+          - /url: /workspace
+          - img [ref=e9]
+          - text: 工作台
+        - link "原始素材" [ref=e11] [cursor=pointer]:
+          - /url: /materials
+          - img [ref=e12]
+          - text: 原始素材
+        - link "知识体系" [ref=e14] [cursor=pointer]:
+          - /url: /knowledge
+          - img [ref=e15]
+          - text: 知识体系
+        - link "设置" [ref=e17] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e18]
+          - text: 设置
+      - button "退出登录" [ref=e23]:
+        - img [ref=e24]
+        - text: 退出登录
+    - main [ref=e26]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - button "一键体系化" [ref=e32]
+          - generic [ref=e33]:
+            - button "原始视图" [ref=e34]
+            - button "体系视图" [ref=e35]
+          - generic [ref=e36]: 1 条素材
+        - generic [ref=e37]:
+          - generic [ref=e39]:
+            - textbox "搜索素材..." [ref=e41]
+            - button "学习笔记 AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。 待解析 2026/6/3" [ref=e54]:
+              - generic [ref=e55]:
+                - generic [ref=e56]:
+                  - paragraph [ref=e57]: 学习笔记
+                  - paragraph [ref=e58]: AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。
+                - generic [ref=e59]: 待解析
+              - paragraph [ref=e60]: 2026/6/3
+          - generic [ref=e44]:
+            - heading "新增素材" [level=3]
+            - generic:
+              - textbox "标题（可选）" [ref=e45]
+              - textbox "输入你的素材内容..." [active] [ref=e46]
+              - button "新增素材" [disabled]
+          - generic [ref=e48]:
+            - textbox "搜索素材..." [ref=e50]
+            - button "学习笔记 AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。 待解析 2026/6/3" [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]:
+                  - paragraph [ref=e64]: 学习笔记
+                  - paragraph [ref=e65]: AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。
+                - generic [ref=e66]: 待解析
+              - paragraph [ref=e67]: 2026/6/3
+  - alert [ref=e29]

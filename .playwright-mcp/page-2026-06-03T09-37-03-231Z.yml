@@ -1,0 +1,81 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e27]:
+    - complementary [ref=e28]:
+      - generic [ref=e29]:
+        - heading "序知" [level=1] [ref=e30]
+        - paragraph [ref=e31]: 个人知识体系
+      - navigation [ref=e32]:
+        - link "工作台" [ref=e33] [cursor=pointer]:
+          - /url: /workspace
+          - img [ref=e34]
+          - text: 工作台
+        - link "原始素材" [ref=e36] [cursor=pointer]:
+          - /url: /materials
+          - img [ref=e37]
+          - text: 原始素材
+        - link "知识体系" [ref=e39] [cursor=pointer]:
+          - /url: /knowledge
+          - img [ref=e40]
+          - text: 知识体系
+        - link "设置" [ref=e42] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e43]
+          - text: 设置
+      - button "退出登录" [ref=e48]:
+        - img [ref=e49]
+        - text: 退出登录
+    - main [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - button "一键体系化" [ref=e54]
+          - generic [ref=e55]:
+            - button "原始视图" [ref=e56]
+            - button "体系视图" [ref=e57]
+          - generic [ref=e58]: 2 条素材
+        - generic [ref=e59]:
+          - generic [ref=e61]:
+            - textbox "搜索素材..." [ref=e63]
+            - generic [ref=e65]:
+              - button "布局测试 验证三栏布局修复后的新增功能 待解析 2026/6/3" [ref=e93]:
+                - generic [ref=e94]:
+                  - generic [ref=e95]:
+                    - paragraph [ref=e96]: 布局测试
+                    - paragraph [ref=e97]: 验证三栏布局修复后的新增功能
+                  - generic [ref=e98]: 待解析
+                - paragraph [ref=e99]: 2026/6/3
+              - button "学习笔记 AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。 已解析 2026/6/3" [ref=e66]:
+                - generic [ref=e67]:
+                  - generic [ref=e68]:
+                    - paragraph [ref=e69]: 学习笔记
+                    - paragraph [ref=e70]: AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。
+                  - generic [ref=e71]: 已解析
+                - paragraph [ref=e72]: 2026/6/3
+          - generic [ref=e74]:
+            - heading "新增素材" [level=3] [ref=e75]
+            - generic [ref=e76]:
+              - textbox "标题（可选）" [ref=e77]
+              - textbox "输入你的素材内容..." [ref=e78]
+              - button "新增素材" [disabled]
+          - generic [ref=e80]:
+            - textbox "搜索素材..." [ref=e82]
+            - generic [ref=e84]:
+              - button "布局测试 验证三栏布局修复后的新增功能 待解析 2026/6/3" [ref=e100]:
+                - generic [ref=e101]:
+                  - generic [ref=e102]:
+                    - paragraph [ref=e103]: 布局测试
+                    - paragraph [ref=e104]: 验证三栏布局修复后的新增功能
+                  - generic [ref=e105]: 待解析
+                - paragraph [ref=e106]: 2026/6/3
+              - button "学习笔记 AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。 已解析 2026/6/3" [ref=e85]:
+                - generic [ref=e86]:
+                  - generic [ref=e87]:
+                    - paragraph [ref=e88]: 学习笔记
+                    - paragraph [ref=e89]: AI 是人工智能的简称，它能够模拟人类智能行为。机器学习是 AI 的一个子领域，通过数据训练模型来完成特定任务。深度学习是机器学习的分支，使用多层神经网络处理复杂数据。
+                  - generic [ref=e90]: 已解析
+                - paragraph [ref=e91]: 2026/6/3
+  - generic [ref=e108]:
+    - img [ref=e109]
+    - generic [ref=e112]: 素材创建成功
+    - button [ref=e113]:
+      - img [ref=e114]
+  - alert [ref=e26]

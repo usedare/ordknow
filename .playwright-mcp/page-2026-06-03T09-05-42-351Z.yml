@@ -1,0 +1,48 @@
+- generic [ref=e1]:
+  - generic [ref=e27]:
+    - complementary [ref=e28]:
+      - generic [ref=e29]:
+        - heading "序知" [level=1] [ref=e30]
+        - paragraph [ref=e31]: 个人知识体系
+      - navigation [ref=e32]:
+        - link "工作台" [ref=e33] [cursor=pointer]:
+          - /url: /workspace
+          - img [ref=e34]
+          - text: 工作台
+        - link "原始素材" [ref=e36] [cursor=pointer]:
+          - /url: /materials
+          - img [ref=e37]
+          - text: 原始素材
+        - link "知识体系" [ref=e39] [cursor=pointer]:
+          - /url: /knowledge
+          - img [ref=e40]
+          - text: 知识体系
+        - link "设置" [ref=e42] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e43]
+          - text: 设置
+      - button "退出登录" [ref=e48]:
+        - img [ref=e49]
+        - text: 退出登录
+    - main [ref=e51]:
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - button "一键体系化" [ref=e56]
+          - generic [ref=e57]:
+            - button "原始视图" [ref=e58]
+            - button "体系视图" [ref=e59]
+          - generic [ref=e60]: 0 条素材
+        - generic [ref=e61]:
+          - generic [ref=e63]:
+            - textbox "搜索素材..." [ref=e65]
+            - generic [ref=e67]: 暂无素材，开始添加吧
+          - generic [ref=e68]:
+            - heading "新增素材" [level=3]
+            - generic:
+              - textbox "标题（可选）" [ref=e69]
+              - textbox "输入你的素材内容..." [active] [ref=e70]
+              - button "新增素材" [disabled]
+          - generic [ref=e72]:
+            - textbox "搜索素材..." [ref=e74]
+            - generic [ref=e76]: 暂无素材，开始添加吧
+  - alert [ref=e26]

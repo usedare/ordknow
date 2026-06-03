@@ -1,0 +1,21 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "序知" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 输入无序碎片，输出终身知识体系
+    - generic [ref=e7]:
+      - heading "密码登录" [level=3] [ref=e8]
+      - textbox "邮箱地址" [ref=e9]
+      - textbox "密码（至少 6 位）" [ref=e10]
+      - button "登录" [ref=e11]
+    - generic [ref=e12]:
+      - heading "注册新账号" [level=3] [ref=e13]
+      - textbox "邮箱地址" [ref=e14]
+      - textbox "密码（至少 6 位）" [ref=e15]
+      - button "注册" [ref=e16]
+    - generic [ref=e21]: 或
+    - generic [ref=e22]:
+      - heading "邮箱链接登录" [level=3] [ref=e23]
+      - textbox "邮箱地址" [ref=e24]
+      - button "发送登录链接" [ref=e25]
+  - alert [ref=e26]
