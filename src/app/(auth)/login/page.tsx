@@ -1,4 +1,4 @@
-import { loginWithMagicLink, signupWithEmail, loginWithEmail } from "./actions";
+import { signupWithEmail, loginWithEmail } from "./actions";
 
 export default async function LoginPage({
   searchParams,
@@ -15,12 +15,6 @@ export default async function LoginPage({
           <p className="text-muted-foreground">输入无序碎片，输出终身知识体系</p>
         </div>
 
-        {params.message === "check-email" && (
-          <div className="p-3 rounded-md bg-green-50 text-green-700 text-sm border border-green-200">
-            登录链接已发送到你的邮箱，请查收。
-          </div>
-        )}
-
         {params.message === "signup-success" && (
           <div className="p-3 rounded-md bg-green-50 text-green-700 text-sm border border-green-200">
             注册成功！请使用邮箱密码登录。
@@ -33,9 +27,9 @@ export default async function LoginPage({
           </div>
         )}
 
-        {/* Email + Password Login */}
+        {/* Password Login */}
         <form action={loginWithEmail} className="space-y-3">
-          <h3 className="text-sm font-medium">密码登录</h3>
+          <h3 className="text-sm font-medium">登录</h3>
           <input
             name="email"
             type="email"
@@ -47,7 +41,7 @@ export default async function LoginPage({
             name="password"
             type="password"
             required
-            placeholder="密码（至少 6 位）"
+            placeholder="密码"
             className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
           />
           <button
@@ -57,6 +51,15 @@ export default async function LoginPage({
             登录
           </button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-background px-2 text-muted-foreground">或</span>
+          </div>
+        </div>
 
         {/* Register */}
         <form action={signupWithEmail} className="space-y-3">
@@ -81,33 +84,6 @@ export default async function LoginPage({
             className="w-full px-4 py-2 border border-border rounded-md font-medium hover:bg-muted transition-colors text-sm"
           >
             注册
-          </button>
-        </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-background px-2 text-muted-foreground">或</span>
-          </div>
-        </div>
-
-        {/* Magic Link */}
-        <form action={loginWithMagicLink} className="space-y-3">
-          <h3 className="text-sm font-medium">邮箱链接登录</h3>
-          <input
-            name="email"
-            type="email"
-            required
-            placeholder="邮箱地址"
-            className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
-          <button
-            type="submit"
-            className="w-full px-4 py-2 border border-border rounded-md font-medium hover:bg-muted transition-colors text-sm"
-          >
-            发送登录链接
           </button>
         </form>
       </div>

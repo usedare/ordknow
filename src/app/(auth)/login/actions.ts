@@ -3,24 +3,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function loginWithMagicLink(formData: FormData) {
-  const supabase = await createClient();
-  const email = formData.get("email") as string;
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:4000"}/workspace`,
-    },
-  });
-
-  if (error) {
-    redirect("/login?error=" + encodeURIComponent(error.message));
-  }
-
-  redirect("/login?message=check-email");
-}
-
 export async function signupWithEmail(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;
@@ -30,7 +12,7 @@ export async function signupWithEmail(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:4000"}/workspace`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/workspace`,
     },
   });
 

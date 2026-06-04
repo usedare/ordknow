@@ -5,6 +5,7 @@ import { KnowledgeNode, KnowledgeEdge } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GraphNode {
   id: string;
@@ -227,8 +228,4 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
       </CardContent>
     </Card>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }
