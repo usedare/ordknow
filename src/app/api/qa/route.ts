@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
         .from("materials")
         .select("raw_content")
         .eq("user_id", user.id)
-        .eq("status", "analysed")
         .textSearch("raw_content", question.split(" ").join(" | "))
         .limit(5);
 
