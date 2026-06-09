@@ -48,15 +48,22 @@ export async function POST(request: NextRequest) {
 
     // Fallback: search materials by text if no vector results
     if (contextMaterials.length === 0) {
-      const { data: textResults } = await supabase
+      const { data: allMaterials } = await supabase
         .from("materials")
         .select("raw_content")
         .eq("user_id", user.id)
-        .textSearch("raw_content", question.split(" ").join(" | "))
-        .limit(5);
+        .limit(20);
 
-      if (textResults) {
-        contextMaterials = textResults.map((r: { raw_content: string }) => r.raw_content);
+      if (allMaterials && allMaterials.length > 0) {
+        // Simple keyword matching
+        const keywords = question.toLowerCase().split(/\s+/);
+        contextMaterials = allMaterials
+          .filter((m: { raw_content: string }) => {
+            const content = m.raw_content.toLowerCase();
+            return keywords.some((kw: string) => content.includes(kw));
+          })
+          .map((m: { raw_content: string }) => m.raw_content)
+          .slice(0, 5);
       }
     }
 
