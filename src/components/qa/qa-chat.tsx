@@ -35,11 +35,15 @@ export function QAChat() {
     setIsLoading(true);
 
     try {
+      // Fetch materials for context
+      const materialsRes = await fetch("/api/materials");
+      const materials = materialsRes.ok ? await materialsRes.json() : [];
+
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch("/api/qa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, modelId: model, saveToKB }),
+        body: JSON.stringify({ question, modelId: model, saveToKB, materials }),
       });
 
       if (res.ok) {

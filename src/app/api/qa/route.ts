@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAIClient } from "@/lib/ai/client";
-import { generateEmbeddings } from "@/lib/embeddings/client";
 
 // POST /api/qa - Answer questions based on knowledge base
 export async function POST(request: NextRequest) {
@@ -13,86 +12,37 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { question, modelId, saveToKB } = body;
+  const { question, modelId, saveToKB, materials } = body;
 
   if (!question || !question.trim()) {
     return NextResponse.json({ error: "Question is required" }, { status: 400 });
   }
 
   try {
-    // Step 1: Generate embedding for the question
-    const [questionEmbedding] = await generateEmbeddings([question]);
-
-    // Step 2: Search for relevant materials using vector similarity
-    const { data: relevantChunks } = await supabase.rpc("match_chunks" as never, {
-      query_embedding: questionEmbedding,
-      match_count: 5,
-      user_id: user.id,
-    }).maybeSingle() as { data: Array<{ id: string; content: string }> | null };
-
-    // Fallback: search by text if no chunks found or rpc fails
+    // Build context from provided materials
     let contextMaterials: string[] = [];
 
-    if (relevantChunks && Array.isArray(relevantChunks) && relevantChunks.length > 0) {
-      // Get the full material content for matched chunks
-      const chunkIds = relevantChunks.map((c: { id: string }) => c.id);
-      const { data: chunks } = await supabase
-        .from("material_chunks")
-        .select("content, material_id")
-        .in("id", chunkIds);
-
-      if (chunks) {
-        contextMaterials = chunks.map((c: { content: string }) => c.content);
-      }
-    }
-
-    // Fallback: search materials by text if no vector results
-    if (contextMaterials.length === 0) {
-      const { data: allMaterials } = await supabase
-        .from("materials")
-        .select("raw_content, user_id")
-        .limit(50);
-
-      if (allMaterials && allMaterials.length > 0) {
-        // Simple keyword matching - search across all user's materials
-        const keywords = question.toLowerCase().split(/\s+/);
-        contextMaterials = allMaterials
-          .filter((m: { raw_content: string; user_id: string }) => {
-            const content = m.raw_content.toLowerCase();
-            return keywords.some((kw: string) => content.includes(kw));
-          })
-          .map((m: { raw_content: string }) => m.raw_content)
-          .slice(0, 5);
-      }
-    }
-
-    // Step 3: Also get relevant knowledge nodes
-    const { data: nodes } = await supabase
-      .from("knowledge_nodes")
-      .select("title, content, topic_id")
-      .eq("user_id", user.id)
-      .limit(10);
-
-    let relevantNodes: string[] = [];
-    if (nodes && nodes.length > 0) {
-      // Simple text matching for nodes
-      const questionLower = question.toLowerCase();
-      relevantNodes = nodes
-        .filter((n: { title: string; content: string | null }) =>
-          n.title.toLowerCase().includes(questionLower) ||
-          (n.content && n.content.toLowerCase().includes(questionLower))
-        )
-        .map((n: { title: string; content: string | null }) =>
-          `[${n.title}] ${n.content || ""}`
-        )
+    if (materials && Array.isArray(materials) && materials.length > 0) {
+      // Filter materials by keyword match
+      const keywords = question.toLowerCase().split(/\s+/);
+      contextMaterials = materials
+        .filter((m: { raw_content: string }) => {
+          const content = m.raw_content.toLowerCase();
+          return keywords.some((kw: string) => content.includes(kw));
+        })
+        .map((m: { raw_content: string }) => m.raw_content)
         .slice(0, 5);
+
+      // If no keyword match, include all materials
+      if (contextMaterials.length === 0) {
+        contextMaterials = materials.slice(0, 5).map((m: { raw_content: string }) => m.raw_content);
+      }
     }
 
-    // Step 4: Build context and generate answer
-    const context = [
-      ...contextMaterials.map((m, i) => `来源素材 ${i + 1}:\n${m}`),
-      ...relevantNodes.map((n, i) => `知识节点 ${i + 1}:\n${n}`),
-    ].join("\n\n");
+    // Build context string
+    const context = contextMaterials.length > 0
+      ? contextMaterials.map((m, i) => `来源素材 ${i + 1}:\n${m}`).join("\n\n")
+      : "（知识库为空）";
 
     const { client, model } = getAIClient(modelId);
 
@@ -113,7 +63,7 @@ export async function POST(request: NextRequest) {
         {
           role: "user",
           content: `知识库内容：
-${context || "（知识库为空，暂无相关内容）"}
+${context}
 
 用户问题：${question}`,
         },
@@ -124,10 +74,9 @@ ${context || "（知识库为空，暂无相关内容）"}
 
     const answer = response.choices[0]?.message?.content || "无法生成回答";
 
-    // Step 5: Optionally save new insights to knowledge base
+    // Optionally save new insights to knowledge base
     let savedInsight = false;
     if (saveToKB && answer) {
-      // Create a new material from the Q&A
       const { error: saveError } = await supabase
         .from("materials")
         .insert({
@@ -143,7 +92,7 @@ ${context || "（知识库为空，暂无相关内容）"}
 
     return NextResponse.json({
       answer,
-      sources: contextMaterials.length + relevantNodes.length,
+      sources: contextMaterials.length,
       savedToKB: savedInsight,
     });
   } catch (error) {
