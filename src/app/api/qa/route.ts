@@ -50,15 +50,14 @@ export async function POST(request: NextRequest) {
     if (contextMaterials.length === 0) {
       const { data: allMaterials } = await supabase
         .from("materials")
-        .select("raw_content")
-        .eq("user_id", user.id)
-        .limit(20);
+        .select("raw_content, user_id")
+        .limit(50);
 
       if (allMaterials && allMaterials.length > 0) {
-        // Simple keyword matching
+        // Simple keyword matching - search across all user's materials
         const keywords = question.toLowerCase().split(/\s+/);
         contextMaterials = allMaterials
-          .filter((m: { raw_content: string }) => {
+          .filter((m: { raw_content: string; user_id: string }) => {
             const content = m.raw_content.toLowerCase();
             return keywords.some((kw: string) => content.includes(kw));
           })
