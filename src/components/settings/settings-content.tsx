@@ -22,6 +22,7 @@ export function SettingsPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    // API Key 仅保存在当前浏览器 localStorage；服务端不会持久化用户私钥。
     setDeepseekKey(localStorage.getItem("ordknow_deepseek_key") || "");
     setSiliconflowKey(localStorage.getItem("ordknow_siliconflow_key") || "");
     setMimoKey(localStorage.getItem("ordknow_mimo_key") || "");
@@ -29,6 +30,7 @@ export function SettingsPage() {
   }, []);
 
   const handleSave = () => {
+    // 保存后，AI 请求会通过自定义请求头把 Key 临时传给后端使用。
     localStorage.setItem("ordknow_deepseek_key", deepseekKey);
     localStorage.setItem("ordknow_siliconflow_key", siliconflowKey);
     localStorage.setItem("ordknow_mimo_key", mimoKey);
@@ -69,7 +71,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>API 配置</CardTitle>
           <CardDescription>
-            配置 AI 服务的 API Key。留空则使用系统默认配置。
+            配置 AI 服务的 API Key。留空则使用系统默认配置；用户 Key 仅保存在当前浏览器。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

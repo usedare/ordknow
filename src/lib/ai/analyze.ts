@@ -1,9 +1,19 @@
 import { getAIClient } from "./client";
 import { MATERIAL_ANALYSIS_SYSTEM_PROMPT, MATERIAL_ANALYSIS_USER_PROMPT } from "./prompts";
 import { MaterialAnalysisResult } from "@/types";
+import { AIKeyOverrides } from "./client";
 
-export async function analyzeMaterial(rawContent: string, modelId?: string): Promise<MaterialAnalysisResult> {
-  const { client, model } = getAIClient(modelId);
+/**
+ * 单条素材解析。
+ *
+ * 解析结果会写入 material_analysis，是后续体系化重构的“理解层输入”。
+ */
+export async function analyzeMaterial(
+  rawContent: string,
+  modelId?: string,
+  keyOverrides?: AIKeyOverrides
+): Promise<MaterialAnalysisResult> {
+  const { client, model } = getAIClient(modelId, keyOverrides);
 
   const response = await client.chat.completions.create({
     model,

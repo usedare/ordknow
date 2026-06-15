@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAIClient } from "@/lib/ai/client";
+import { getAIKeyOverrides } from "@/lib/ai/request";
 
 // POST /api/ocr - Extract text from image using multimodal AI
 export async function POST(request: NextRequest) {
@@ -12,17 +13,19 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { image, filename } = body;
+  const { image, filename, model } = body;
+  const aiKeys = getAIKeyOverrides(request);
 
   if (!image) {
     return NextResponse.json({ error: "No image provided" }, { status: 400 });
   }
 
   try {
-    const { client, model } = getAIClient();
+    // OCR 依赖多模态模型；前端可传入当前选择的模型，未传则走默认模型。
+    const { client, model: selectedModel } = getAIClient(model, aiKeys);
 
     const response = await client.chat.completions.create({
-      model,
+      model: selectedModel,
       messages: [
         {
           role: "user",

@@ -1,4 +1,5 @@
--- Reconstruction Jobs: track systematization tasks
+-- Reconstruction Jobs: 体系化任务记录
+-- 用户点击“一键体系化”时创建 job，用来记录任务状态、输入素材和失败原因。
 CREATE TABLE reconstruction_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -27,7 +28,8 @@ CREATE POLICY "Users can update own jobs"
 
 CREATE INDEX idx_jobs_user ON reconstruction_jobs (user_id, created_at DESC);
 
--- Knowledge Versions: snapshots of knowledge system at each reconstruction
+-- Knowledge Versions: 每次体系化的快照
+-- snapshot 保存模型输出的完整 JSON，方便历史回看、差异比较和未来回滚。
 CREATE TABLE knowledge_versions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,

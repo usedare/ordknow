@@ -1,4 +1,6 @@
--- Material Chunks: text chunks with embeddings for vector search
+-- Material Chunks: 素材分块和向量表
+-- 长素材会被切成 chunk，每个 chunk 生成 embedding。
+-- 这张表为后续语义搜索、相似素材发现、增量体系化提供基础。
 CREATE TABLE material_chunks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   material_id uuid REFERENCES materials(id) ON DELETE CASCADE NOT NULL,
@@ -26,7 +28,7 @@ CREATE POLICY "Users can delete own chunks"
 -- Index for material lookup
 CREATE INDEX idx_chunks_material ON material_chunks (material_id);
 
--- HNSW index for vector similarity search
+-- HNSW 向量索引：用于 cosine similarity 近似搜索。
 CREATE INDEX idx_chunks_embedding ON material_chunks
   USING hnsw (embedding vector_cosine_ops)
   WITH (m = 16, ef_construction = 64);

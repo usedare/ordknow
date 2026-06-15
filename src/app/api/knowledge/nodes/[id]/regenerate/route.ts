@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAIClient } from "@/lib/ai/client";
+import { getAIKeyOverrides } from "@/lib/ai/request";
 
 // POST /api/knowledge/nodes/[id]/regenerate - Regenerate a node's content using AI
 export async function POST(
@@ -9,6 +10,9 @@ export async function POST(
 ) {
   const supabase = await createClient();
   const { id } = await params;
+  const body = await request.json().catch(() => ({}));
+  const { model } = body;
+  const aiKeys = getAIKeyOverrides(request);
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -27,7 +31,7 @@ export async function POST(
     return NextResponse.json({ error: "Node not found" }, { status: 404 });
   }
 
-  // Get source materials for this node
+  // 重新生成必须基于节点的来源素材，避免 AI 脱离知识库自由发挥。
   const { data: links } = await supabase
     .from("node_material_links")
     .select("material_id, materials(raw_content, material_analysis(core_meaning, useful_points, topics, keywords))")
@@ -61,9 +65,9 @@ ${materialsContext || "无来源素材"}
 4. 输出 JSON 格式: {"content": "新内容", "summary": "新摘要"}`;
 
   try {
-    const { client, model } = getAIClient();
+    const { client, model: selectedModel } = getAIClient(model, aiKeys);
     const response = await client.chat.completions.create({
-      model,
+      model: selectedModel,
       messages: [
         { role: "system", content: "你是知识节点内容生成器。基于来源素材重新生成知识节点内容。" },
         { role: "user", content: prompt },

@@ -3,10 +3,21 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+function getCredentials(formData: FormData) {
+  const email = String(formData.get("email") || "").trim();
+  const password = String(formData.get("password") || "");
+
+  if (!email || !password) {
+    redirect("/login?error=" + encodeURIComponent("请输入邮箱和密码"));
+  }
+
+  return { email, password };
+}
+
 export async function signupWithEmail(formData: FormData) {
   const supabase = await createClient();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  // Server Action 中做一层基础校验，避免空表单直接打到 Supabase Auth。
+  const { email, password } = getCredentials(formData);
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -25,8 +36,7 @@ export async function signupWithEmail(formData: FormData) {
 
 export async function loginWithEmail(formData: FormData) {
   const supabase = await createClient();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const { email, password } = getCredentials(formData);
 
   const { error } = await supabase.auth.signInWithPassword({
     email,

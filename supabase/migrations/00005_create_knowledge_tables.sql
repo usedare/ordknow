@@ -1,4 +1,6 @@
--- Knowledge Topics: hierarchical topic structure (level 1 = topic, level 2 = branch)
+-- Knowledge Topics: AI 生成的层级主题
+-- level=1 是一级主题，level=2 是二级分支。
+-- 知识节点挂在二级分支下，形成“总-分-细”的结构。
 CREATE TABLE knowledge_topics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -33,7 +35,8 @@ CREATE POLICY "Users can delete own topics"
 CREATE INDEX idx_topics_user ON knowledge_topics (user_id);
 CREATE INDEX idx_topics_parent ON knowledge_topics (parent_id);
 
--- Knowledge Nodes: individual knowledge entries
+-- Knowledge Nodes: 体系化后的知识节点
+-- 这是用户主要阅读和复用的知识单元；内容来自 AI 基于来源素材的重构。
 CREATE TABLE knowledge_nodes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -69,7 +72,8 @@ CREATE POLICY "Users can delete own nodes"
 CREATE INDEX idx_nodes_user ON knowledge_nodes (user_id);
 CREATE INDEX idx_nodes_topic ON knowledge_nodes (topic_id);
 
--- Node Material Links: knowledge node ↔ source material references
+-- Node Material Links: 知识节点 ↔ 原始素材证据引用
+-- 每个 AI 节点都应能追溯到一个或多个原始素材，防止知识体系脱离事实来源。
 CREATE TABLE node_material_links (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   node_id uuid REFERENCES knowledge_nodes(id) ON DELETE CASCADE NOT NULL,

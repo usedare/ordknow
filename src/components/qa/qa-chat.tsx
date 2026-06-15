@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
 import { Send, Save, Bot, User, Loader2 } from "lucide-react";
 
 interface Message {
@@ -35,15 +36,11 @@ export function QAChat() {
     setIsLoading(true);
 
     try {
-      // Fetch materials for context
-      const materialsRes = await fetch("/api/materials");
-      const materials = materialsRes.ok ? await materialsRes.json() : [];
-
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch("/api/qa", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, modelId: model, saveToKB, materials }),
+        headers: getAIRequestHeaders(),
+        body: JSON.stringify({ question, modelId: model, saveToKB }),
       });
 
       if (res.ok) {

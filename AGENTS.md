@@ -1,41 +1,17 @@
 <claude-mem-context>
 # Memory Context
 
-# [OrdKnow] recent context, 2026-06-04 1:01pm GMT+8
+# [OrdKnow] recent context, 2026-06-15 10:48pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (10,214t read) | 0t work
+Stats: 50 obs (13,617t read) | 0t work
 
 ### Jun 2, 2026
-1723 3:24p ✅ package.json 更新为 Next.js 标准格式并创建项目目录结构
-1724 " 🟣 Supabase 客户端和认证中间件实现完成
-1725 " ✅ 首个数据库迁移文件创建：启用 pgvector 扩展
-1726 3:25p 🟣 完整数据库 schema 实现：6 个迁移文件定义 8 张业务表
-1727 " 🟣 认证页面和主布局实现：Magic Link 登录 + 侧边栏导航
-1728 3:27p 🟣 Knowledge systematization API route created
-1729 " 🟣 Knowledge tree and detail UI components built
-1730 " 🟣 Knowledge page upgraded from placeholder to full implementation
-1731 " 🔵 OrdKnow project architecture identified
-1732 6:50p 🟣 Knowledge tree API and node materials API routes created
-1733 " 🔵 OrdKnow full build passes with all knowledge system routes
-1734 " 🟣 Workspace three-panel layout with view toggle built
-1735 " 🟣 Workspace page upgraded to full material editing and knowledge browsing IDE
-1736 6:51p 🔵 Phase 5 build verified successfully with workspace components
-1737 " 🟣 Settings page with API key config, data export, and privacy disclosure
-1738 " 🟣 Settings page wired and export API route directory created
-1739 " 🟣 Export API route created for full user data JSON download
-1740 " 🟣 Knowledge versions list API route created
-1741 " 🔵 Final production build passes with 14 routes including export and versions APIs
 S319 验证并补全 OrdKnow（序知）项目的 PRD 需求，实现 100% 功能覆盖 (Jun 2, 6:52 PM)
 S318 Build the full OrdKnow MVP - a Chinese-language knowledge management app with AI-powered material analysis and knowledge systematization (Jun 2, 6:52 PM)
-1742 6:55p 🔵 PRD updated with Karpathy LLM Knowledge Base architecture and future roadmap
-1743 " 🟣 Knowledge edges table and TypeScript types added per PRD Section 15
-1744 " ✅ Systematize route now clears knowledge_edges during fresh rebuild
-1745 6:57p 🟣 Automatic knowledge edge creation added to systematize flow
-1746 " 🔵 用户请求验证文档需求完成状态
 1747 7:01p 🟣 知识体系健康检查功能实现
 1748 " 🔵 PRD 需求完成度验证
 1749 7:02p 🔵 PRD 需求完成度审计结果 — 95% 完成
@@ -68,11 +44,29 @@ S325 OrdKnow multi-provider AI integration - primary session idle, awaiting user
 S323 OrdKnow multi-provider AI integration - awaiting user env configuration (no new activity) (Jun 2, 7:56 PM)
 S324 OrdKnow multi-provider AI integration - no new activity from primary session (Jun 2, 7:56 PM)
 S322 OrdKnow multi-provider AI integration - app opened in browser, awaiting env configuration (Jun 2, 7:57 PM)
-**Investigated**: Primary session attempted to start dev server on port 3456 (EADDRINUSE), found existing Next.js server on port 3001 (PID 72452), tried Chrome MCP (not connected), ultimately opened http://localhost:3001/login in default browser.
-
-**Learned**: Port 3001 already has a Next.js 16.2.7 dev server running (PID 72452). The login page returns 500 because Supabase environment variables are not configured. Chrome MCP extension is not available for automated screenshot testing. The app requires .env.local with Supabase, DeepSeek, MiMo, and Jina credentials, plus 7 SQL migration files run in Supabase SQL Editor, before it can function.
-
-**Completed**: All code changes for multi-provider AI support are implemented and build-verified. Dev server is running on port 3001. Browser opened to login page. Primary session informed user of 4 setup steps: (1) stop server, (2) create .env.local from .env.local.example, (3) run 7 migrations in Supabase, (4) restart dev server.
-
-**Next Steps**: User needs to configure .env.local and run Supabase migrations. After that, testing can begin: verify settings page shows 4 model options, verify model selection persists in localStorage, verify analyze/systematize pass model to API, verify MiMo provider works if API key is provided.
+### Jun 15, 2026
+2330 3:57p 🟣 Sample DOCX Report Generator Script Created
+2331 " ⚖️ StarUML MCP Integration Adopted for Diagram Generation
+2332 " 🔵 Documents Plugin Render Pipeline Requires LibreOffice
+2334 3:59p 🟣 StarUML MCP Diagram Generation via Mermaid Code
+2338 4:05p 🔵 StarUML MCP Capabilities and Limitations Confirmed
+2339 " ✅ System Architecture Diagram Generation via StarUML Mermaid Flowchart
+2343 4:09p 🔵 序知 Database Schema and Systematization API Fully Mapped
+2344 " 🔵 序知 Production Build Verified with 27 Routes on Next.js 16
+2346 4:15p 🟣 Full Lab Report Generator Script Created (build_full_report.py)
+2348 4:18p 🟣 Full Lab Report DOCX Generated Successfully — 16 Pages
+2352 4:37p ✅ First Report Draft Delivered but Rejected by User
+2353 4:47p 🔵 Reference PDF Structure Fully Extracted — 136-Page Template for 序知 Report
+2354 " 🔄 Second Report Generator — Template-Faithful Combined Document Script
+2380 5:31p 🔵 Git Repository State: Uncommitted Code Fixes, Comments, and Document Artifacts
+2410 10:18p 🟣 序知软件工程实验报告文档生成系统扩展
+2411 " 🔵 序知项目技术架构与部署状态
+2415 " 🔵 Codex shell执行反复失败确认sandbox权限问题为阻塞根因
+2416 " 🔵 序知文档生成脚本就绪但被sandbox权限阻塞
+2421 " 🟣 文档脚本自动嵌入真实截图证据
+2413 10:19p 🔵 Codex Windows sandbox执行权限持续阻断
+2437 10:37p 🟣 StarUML MCP集成成功生成UML图表
+2444 10:40p 🔵 StarUML内部源码逆向分析用于图表自动导出
+2448 10:44p 🟣 序知最终文档生成完成-100页含StarUML真实图表
+2451 10:47p ✅ 序知项目GitHub推送前文件清单与gitignore清理
 </claude-mem-context>

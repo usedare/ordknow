@@ -29,6 +29,7 @@ interface KnowledgeGraphProps {
   onNodeClick?: (node: KnowledgeNode) => void;
 }
 
+// 不同关系类型使用固定颜色，保持图谱在多次渲染时语义稳定。
 const edgeColors: Record<string, string> = {
   related: "#6b7280",
   prerequisite: "#3b82f6",
@@ -48,7 +49,7 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
   const animationRef = useRef<number>(0);
 
-  // Initialize graph nodes with random positions
+  // 初始位置使用随机散布，随后由轻量力导向模拟自动拉开节点。
   useEffect(() => {
     if (nodes.length === 0) return;
 
@@ -72,7 +73,7 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
     setGraphEdges(newEdges);
   }, [nodes, edges, dimensions.width, dimensions.height]);
 
-  // Simple force simulation
+  // 简化版力导向布局：节点互斥、关系边牵引、整体向中心收束。
   useEffect(() => {
     if (graphNodes.length === 0) return;
 
@@ -83,7 +84,7 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
       setGraphNodes((prev) => {
         const next = prev.map((n) => ({ ...n }));
 
-        // Repulsion between nodes
+        // 节点之间的斥力，避免文字和圆点全部挤在一起。
         for (let i = 0; i < next.length; i++) {
           for (let j = i + 1; j < next.length; j++) {
             const dx = next[j].x - next[i].x;
@@ -97,7 +98,7 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
           }
         }
 
-        // Attraction along edges
+        // 有关系边的节点互相吸引，体现知识关联。
         for (const edge of newEdges) {
           const source = next.find((n) => n.id === edge.source);
           const target = next.find((n) => n.id === edge.target);
@@ -113,7 +114,7 @@ export function KnowledgeGraph({ nodes, edges, onNodeClick }: KnowledgeGraphProp
           target.vy -= (dy / dist) * force;
         }
 
-        // Center gravity
+        // 中心引力和阻尼，防止图谱不断漂移。
         for (const n of next) {
           n.vx += (dimensions.width / 2 - n.x) * 0.001;
           n.vy += (dimensions.height / 2 - n.y) * 0.001;

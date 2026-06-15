@@ -1,0 +1,59 @@
+
+> ordknow@0.1.0 build
+> next build
+
+▲ Next.js 16.2.7 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.9s
+  Running TypeScript ...
+  Finished TypeScript in 8.7s ...
+  Collecting page data using 19 workers ...
+  Generating static pages using 19 workers (0/27) ...
+  Generating static pages using 19 workers (6/27) 
+  Generating static pages using 19 workers (13/27) 
+  Generating static pages using 19 workers (20/27) 
+✓ Generating static pages using 19 workers (27/27) in 690ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/analyze
+├ ƒ /api/audio2text
+├ ƒ /api/export
+├ ƒ /api/export/markdown
+├ ƒ /api/fetch-url
+├ ƒ /api/knowledge
+├ ƒ /api/knowledge/edges/[nodeId]
+├ ƒ /api/knowledge/edges/all
+├ ƒ /api/knowledge/health
+├ ƒ /api/knowledge/node/[id]/materials
+├ ƒ /api/knowledge/nodes/[id]
+├ ƒ /api/knowledge/nodes/[id]/regenerate
+├ ƒ /api/knowledge/nodes/all
+├ ƒ /api/knowledge/versions
+├ ƒ /api/knowledge/versions/[id]/diff
+├ ƒ /api/materials
+├ ƒ /api/materials/[id]
+├ ƒ /api/ocr
+├ ƒ /api/parse-file
+├ ƒ /api/qa
+├ ƒ /api/search
+├ ƒ /api/setup-storage
+├ ƒ /api/systematize
+├ ƒ /api/transcribe
+├ ○ /knowledge
+├ ƒ /login
+├ ○ /materials
+├ ○ /qa
+├ ○ /settings
+└ ○ /workspace
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

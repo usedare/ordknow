@@ -17,6 +17,12 @@ interface MaterialDetailProps {
   onAnalyze: (id: string) => Promise<void>;
 }
 
+/**
+ * 素材详情组件。
+ *
+ * 上半部分展示/编辑原始素材；下半部分展示 AI 解析结果。
+ * 注意这里不会直接触发体系化，体系化是基于“所有已解析素材”的全库操作。
+ */
 export function MaterialDetail({
   material,
   analysis,
@@ -32,6 +38,7 @@ export function MaterialDetail({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleUpdate = async () => {
+    // 修改原文后，后端会把素材状态重置为 pending，要求重新 AI 解析。
     setIsUpdating(true);
     await onUpdate(material.id, title, content);
     setIsEditing(false);
@@ -105,6 +112,7 @@ export function MaterialDetail({
       )}
 
       {/* Analysis Results */}
+      {/* 解析结果是 AI 对单条素材的结构化理解，不等同于最终知识体系。 */}
       {analysis && (
         <Card>
           <CardHeader>

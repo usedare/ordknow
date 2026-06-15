@@ -18,27 +18,34 @@ export async function POST(request: NextRequest) {
   }
 
   // Validate URL format
+  let parsedUrl: URL;
   try {
-    new URL(url);
+    parsedUrl = new URL(url);
   } catch {
     return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
   }
 
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    return NextResponse.json({ error: "Only HTTP/HTTPS URLs are supported" }, { status: 400 });
+  }
+
   try {
-    // Use Jina Reader API (free, no API key needed)
+    // 通过 Jina Reader 抓取正文，避免服务端直接解析复杂网页。
     const jinaUrl = `https://r.jina.ai/${url}`;
     const res = await fetch(jinaUrl, {
       headers: {
         "Accept": "text/plain",
         "X-Return-Format": "text",
       },
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) {
       throw new Error(`Jina Reader returned ${res.status}`);
     }
 
-    const text = await res.text();
+    // 限制返回文本长度，避免一次抓取把超大网页塞进前端和后续 AI 上下文。
+    const text = (await res.text()).slice(0, 100_000);
 
     // Extract title from the response (first line or metadata)
     const lines = text.split("\n");

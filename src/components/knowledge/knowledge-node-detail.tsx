@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Link2, Pencil, RotateCcw } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
 
 interface RelatedNode {
   edge_type: string;
@@ -93,8 +94,11 @@ export function KnowledgeNodeDetail({ node, sourceMaterials, onNodeSelect, onNod
     setIsRegenerating(true);
     toast("正在重新生成节点内容...", "info");
     try {
+      const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch(`/api/knowledge/nodes/${node.id}/regenerate`, {
         method: "POST",
+        headers: getAIRequestHeaders(),
+        body: JSON.stringify({ model }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -179,6 +183,7 @@ export function KnowledgeNodeDetail({ node, sourceMaterials, onNodeSelect, onNod
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
+              {/* 知识边来自体系化阶段的自动关联，用于体现 Karpathy 式“知识网络”能力。 */}
               {relatedNodes.map((related) => (
                 <button
                   key={related.node?.id}
@@ -205,6 +210,7 @@ export function KnowledgeNodeDetail({ node, sourceMaterials, onNodeSelect, onNod
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
+              {/* 来源素材是 AI 内容可信度的锚点：用户可以随时回看原始证据。 */}
               {sourceMaterials.map((material) => (
                 <div key={material.id} className="p-2 rounded-md bg-muted text-sm">
                   <p className="font-medium">{material.title || "无标题"}</p>

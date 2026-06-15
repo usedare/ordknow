@@ -44,3 +44,20 @@ supabase/.temp
 .playwright-mcp/
 
 .vercel
+
+# generated report QA/intermediate artifacts
+docs/example_pdf_pages/
+docs/full_rendered/
+docs/final_rendered/
+docs/images/
+docs/rendered/
+docs/rendered_pdf/
+docs/template_figures/
+docs/template_rendered/
+docs/~$*
+docs/序知_软件工程实验报告.*
+docs/序知_软件工程文档合订本*
+report_samples/
+tools/__pycache__/
+docs/evidence/src__*
+docs/evidence/staruml_response_sample.json

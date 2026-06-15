@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+/**
+ * 素材 API：负责“原始素材层”的增查。
+ *
+ * 序知的基本原则是：用户输入的原始内容不能被 AI 覆盖。
+ * 所以这里写入的是 raw_content 原文，后续 AI 解析结果会放到 material_analysis 表。
+ */
+
 // GET /api/materials - List all materials for current user
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -13,6 +20,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
 
+  // 所有业务表都带 user_id；即使数据库有 RLS，服务端也显式按当前用户过滤。
   let query = supabase
     .from("materials")
     .select("*")
@@ -48,6 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "raw_content is required" }, { status: 400 });
   }
 
+  // 新素材只标记为 pending；是否解析、何时体系化由后续流程决定。
   const { data, error } = await supabase
     .from("materials")
     .insert({

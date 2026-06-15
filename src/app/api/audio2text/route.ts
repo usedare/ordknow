@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 
+const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 与 Supabase Storage bucket 上限保持一致。
+
 // POST /api/audio2text - Transcribe audio using Volcengine 录音文件识别2.0
 export async function POST(request: NextRequest) {
   // Auth check with user session
@@ -34,12 +36,18 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  let storagePath: string | null = null;
+
   try {
-    // Step 1: Upload audio to Supabase Storage
+    // Step 1: 上传音频到公开 bucket，火山引擎异步识别接口需要可访问 URL。
     const base64Data = audio.includes(",") ? audio.split(",")[1] : audio;
     const audioBuffer = Buffer.from(base64Data, "base64");
+    if (audioBuffer.byteLength > MAX_AUDIO_SIZE) {
+      return NextResponse.json({ error: "音频文件过大，当前最多支持 50MB" }, { status: 413 });
+    }
+
     const ext = filename?.split(".").pop() || "wav";
-    const storagePath = `audio/${user.id}/${randomUUID()}.${ext}`;
+    storagePath = `audio/${user.id}/${randomUUID()}.${ext}`;
 
     const { error: uploadError } = await serviceClient.storage
       .from("ordknow-public")
@@ -59,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     const audioUrl = urlData.publicUrl;
 
-    // Step 2: Submit recognition task to Volcengine
+    // Step 2: 提交识别任务。taskId 同时作为请求追踪 ID。
     const taskId = randomUUID();
 
     const submitRes = await fetch(
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest) {
       throw new Error(`Submit failed: ${message || statusCode}`);
     }
 
-    // Step 3: Poll for results (max 120 seconds)
+    // Step 3: 轮询识别结果，最长约 120 秒。
     for (let i = 0; i < 60; i++) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -146,6 +154,9 @@ export async function POST(request: NextRequest) {
     throw new Error("Transcription timeout (120s)");
   } catch (error) {
     console.error("Audio transcription failed:", error);
+    if (storagePath) {
+      await serviceClient.storage.from("ordknow-public").remove([storagePath]).catch(() => {});
+    }
     return NextResponse.json(
       {
         text: "",

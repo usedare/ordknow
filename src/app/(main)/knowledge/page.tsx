@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Activity, AlertTriangle, Info, GitBranch } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
 
 interface HealthIssue {
-  type: "duplicate" | "orphan" | "no_source";
+  type: "duplicate" | "orphan" | "empty_content";
   severity: "warning" | "info";
   title: string;
   description: string;
@@ -25,8 +26,17 @@ interface HealthReport {
   is_healthy: boolean;
 }
 
+/**
+ * 知识体系页面。
+ *
+ * 这个页面展示 AI 已经“编译”出来的知识网络：
+ * - 左侧可以在树状结构和图谱结构之间切换。
+ * - 右侧显示选中知识节点的正文、摘要、相关节点和来源素材。
+ * - “健康检查”用于发现重复节点、无来源节点、空内容节点。
+ */
 export default function KnowledgePage() {
   const { toast } = useToast();
+  // topics 用于树状视图；allNodes + edges 用于图谱视图。
   const [topics, setTopics] = useState<Array<KnowledgeTopic & { children?: Array<KnowledgeTopic & { nodes?: KnowledgeNode[] }> }>>([]);
   const [allNodes, setAllNodes] = useState<KnowledgeNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
@@ -40,6 +50,7 @@ export default function KnowledgePage() {
 
   const fetchKnowledge = useCallback(async () => {
     try {
+      // 三个接口并行加载，避免图谱/树状视图互相阻塞。
       const [topicsRes, edgesRes, nodesRes] = await Promise.all([
         fetch("/api/knowledge"),
         fetch("/api/knowledge/edges/all"),
@@ -74,7 +85,7 @@ export default function KnowledgePage() {
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch("/api/systematize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAIRequestHeaders(),
         body: JSON.stringify({ model }),
       });
       if (res.ok) {
@@ -112,6 +123,7 @@ export default function KnowledgePage() {
   const handleNodeSelect = async (node: KnowledgeNode) => {
     setSelectedNode(node);
     try {
+      // 选中节点后再加载来源素材，减少初次进入页面的数据量。
       const res = await fetch(`/api/knowledge/node/${node.id}/materials`);
       if (res.ok) {
         const data = await res.json();

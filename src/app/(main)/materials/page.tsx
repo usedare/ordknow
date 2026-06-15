@@ -6,6 +6,7 @@ import { MaterialInput } from "@/components/materials/material-input";
 import { MaterialList } from "@/components/materials/material-list";
 import { MaterialDetail } from "@/components/materials/material-detail";
 import { useToast } from "@/components/ui/toast";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
 
 const STATUS_OPTIONS: Array<{ value: MaterialStatus | "all"; label: string }> = [
   { value: "all", label: "全部状态" },
@@ -111,7 +112,7 @@ export default function MaterialsPage() {
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAIRequestHeaders(),
         body: JSON.stringify({ material_id: id, model }),
       });
       if (res.ok) {

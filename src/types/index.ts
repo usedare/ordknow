@@ -1,6 +1,6 @@
-// Material types
+// 素材层：保留用户原始输入和 AI 单条解析状态。
 export type MaterialStatus = "pending" | "analyzing" | "analyzed" | "failed";
-export type SourceType = "manual" | "paste" | "ocr" | "audio_transcript" | "imported_doc";
+export type SourceType = "manual" | "paste" | "ocr" | "audio_transcript" | "imported_doc" | "qa";
 export type KnowledgeType = "concept" | "method" | "experience" | "case" | "question" | "idea" | "quote" | "summary" | "task";
 export type NodeType = "concept" | "method" | "experience" | "case" | "question" | "idea" | "summary";
 export type JobStatus = "queued" | "running" | "completed" | "failed";
@@ -41,7 +41,7 @@ export interface MaterialChunk {
   created_at: string;
 }
 
-// Knowledge types
+// 知识网络层：AI 把素材编译成主题、节点和节点关系。
 export interface KnowledgeTopic {
   id: string;
   user_id: string;
@@ -92,7 +92,7 @@ export interface KnowledgeEdge {
   updated_at: string;
 }
 
-// Reconstruction types
+// 重构任务和版本：每次“一键体系化”都生成一个可追溯版本。
 export interface ReconstructionJob {
   id: string;
   user_id: string;
@@ -115,7 +115,7 @@ export interface KnowledgeVersion {
   created_at: string;
 }
 
-// AI output types
+// AI 输出结构：和 prompt 约束保持一致，便于落库和前端展示。
 export interface MaterialAnalysisResult {
   core_meaning: string;
   useful_points: string[];

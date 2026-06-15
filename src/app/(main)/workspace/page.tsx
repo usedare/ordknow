@@ -10,13 +10,25 @@ import { ViewToggle } from "@/components/workspace/view-toggle";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { SearchDialog } from "@/components/ui/search-dialog";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
 import { Search } from "lucide-react";
 
+/**
+ * 工作台页面：把“原始素材”和“AI 体系化结果”放到同一个三栏界面里。
+ *
+ * 左栏：素材列表。
+ * 中栏：素材输入、编辑、AI 单条解析结果。
+ * 右栏：根据视图切换显示原始素材列表或知识体系树。
+ *
+ * 这是序知的核心使用场景：用户不用先整理，只管输入；AI 负责解析和体系化。
+ */
 export default function WorkspacePage() {
   const { toast } = useToast();
+  // materials 是原始素材层；selectedMaterial/analysis 是当前正在查看的素材及其理解层结果。
   const [materials, setMaterials] = useState<Material[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [analysis, setAnalysis] = useState<MaterialAnalysis | null>(null);
+  // topics 是 AI 体系化视图的数据源，来自 /api/knowledge。
   const [topics, setTopics] = useState<Array<KnowledgeTopic & { children?: Array<KnowledgeTopic & { nodes?: KnowledgeNode[] }> }>>([]);
   const [activeView, setActiveView] = useState<"raw" | "systematized">("raw");
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +37,7 @@ export default function WorkspacePage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const fetchMaterials = useCallback(async () => {
+    // 拉取当前用户的全部原始素材，页面筛选和选择都在前端完成。
     const res = await fetch("/api/materials");
     if (res.ok) {
       const data = await res.json();
@@ -34,6 +47,7 @@ export default function WorkspacePage() {
   }, []);
 
   const fetchKnowledge = useCallback(async () => {
+    // 拉取 AI 已经生成的主题树；如果还没体系化，这里通常是空数组。
     const res = await fetch("/api/knowledge");
     if (res.ok) {
       const data = await res.json();
@@ -112,10 +126,11 @@ export default function WorkspacePage() {
   const handleAnalyzeMaterial = async (id: string) => {
     toast("正在 AI 解析...", "info");
     try {
+      // 分析只处理单条素材，完成后素材状态会从 pending 变成 analyzed。
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAIRequestHeaders(),
         body: JSON.stringify({ material_id: id, model }),
       });
       if (res.ok) {
@@ -134,10 +149,11 @@ export default function WorkspacePage() {
     setIsSystematizing(true);
     toast("正在生成知识体系，可能需要一些时间...", "info");
     try {
+      // 体系化会读取所有 analyzed 素材，重建整套知识体系。
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
       const res = await fetch("/api/systematize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAIRequestHeaders(),
         body: JSON.stringify({ model }),
       });
       if (res.ok) {
@@ -153,8 +169,8 @@ export default function WorkspacePage() {
     setIsSystematizing(false);
   };
 
-  const handleNodeSelect = (node: KnowledgeNode) => {
-    console.log("Selected node:", node);
+  const handleNodeSelect = (_node: KnowledgeNode) => {
+    // 工作台右侧只负责预览体系树；节点详情编辑集中在 /knowledge 页面处理。
   };
 
   if (isLoading) {

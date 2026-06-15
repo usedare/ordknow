@@ -2,6 +2,11 @@ import OpenAI from "openai";
 
 export type AIProvider = "deepseek" | "mimo";
 
+export interface AIKeyOverrides {
+  deepseek?: string;
+  mimo?: string;
+}
+
 interface ProviderConfig {
   baseURL: string;
   apiKey: string;
@@ -60,17 +65,33 @@ export const AVAILABLE_MODELS: ModelOption[] = [
   },
 ];
 
-export function getAIClient(modelId?: string): { client: OpenAI; model: string } {
+/**
+ * 创建兼容 OpenAI SDK 的模型客户端。
+ *
+ * 模型供应商由 modelId 决定：
+ * - DeepSeek 使用 DEEPSEEK_API_KEY 或请求头里的用户 Key。
+ * - MiMo 使用 MIMO_API_KEY 或请求头里的用户 Key。
+ *
+ * 注意：用户 Key 只用于当前服务端请求，不写入数据库。
+ */
+export function getAIClient(
+  modelId?: string,
+  keyOverrides: AIKeyOverrides = {}
+): { client: OpenAI; model: string } {
   const model = modelId || "deepseek-chat";
   const modelOption = AVAILABLE_MODELS.find((m) => m.id === model);
   const provider = modelOption?.provider || "deepseek";
   const config = PROVIDERS[provider];
 
-  // Allow override via env vars (for user-provided keys)
+  // 环境变量是默认系统 Key；请求头覆盖值用于“用户自带 Key”的单次调用。
   const apiKey =
     provider === "mimo"
-      ? process.env.MIMO_API_KEY || config.apiKey
-      : process.env.DEEPSEEK_API_KEY || config.apiKey;
+      ? keyOverrides.mimo || process.env.MIMO_API_KEY || config.apiKey
+      : keyOverrides.deepseek || process.env.DEEPSEEK_API_KEY || config.apiKey;
+
+  if (!apiKey) {
+    throw new Error(`缺少 ${provider === "mimo" ? "MiMo" : "DeepSeek"} API Key，请在设置页填写或配置环境变量`);
+  }
 
   const client = new OpenAI({
     baseURL: config.baseURL,

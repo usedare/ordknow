@@ -1,4 +1,5 @@
--- Materials: raw user input
+-- Materials: 原始素材表
+-- 这是序知的“事实源”。用户输入的内容以 raw_content 原样保存，AI 解析和体系化都不能覆盖它。
 CREATE TABLE materials (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -10,7 +11,7 @@ CREATE TABLE materials (
   updated_at timestamptz DEFAULT now() NOT NULL
 );
 
--- RLS: users can only access their own materials
+-- RLS: 用户只能访问自己的素材。服务端查询也会显式加 user_id 双重保护。
 ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own materials"

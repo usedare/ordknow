@@ -6,12 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, FileText, Mic, Link } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
 
 interface MaterialInputProps {
   onSubmit: (title: string, content: string) => Promise<void>;
   isLoading?: boolean;
 }
 
+/**
+ * 素材输入组件。
+ *
+ * 它支持四种入口：手写文本、图片 OCR、文件解析、音频转写、网页抓取。
+ * 这些入口都只把内容追加到输入框，真正写入数据库发生在用户点击“新增素材”之后。
+ * 这样可以让用户在入库前修正识别错误或删除无关内容。
+ */
 export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
@@ -50,10 +58,18 @@ export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
         reader.readAsDataURL(file);
       });
 
+      // OCR 需要多模态模型；如果用户当前选的是纯文本模型，则自动切到 MiMo。
+      const selectedModel = localStorage.getItem("ordknow_model") || "mimo-v2.5";
+      const ocrModel = selectedModel.startsWith("mimo") ? selectedModel : "mimo-v2.5";
+
       const res = await fetch("/api/ocr", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64, filename: file.name }),
+        headers: getAIRequestHeaders(),
+        body: JSON.stringify({
+          image: base64,
+          filename: file.name,
+          model: ocrModel,
+        }),
       });
 
       if (res.ok) {
@@ -85,6 +101,7 @@ export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
       return;
     }
 
+    // 文件解析只负责把外部资料转成文本草稿，用户点击“新增素材”后才正式入库。
     setIsProcessing(true);
     toast("正在解析文件...", "info");
 
@@ -131,6 +148,7 @@ export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
       return;
     }
 
+    // 音频同样先转写为文本草稿，保留用户确认和编辑的机会。
     setIsProcessing(true);
     toast("正在转写音频...", "info");
 
@@ -168,6 +186,7 @@ export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
   const handleUrlFetch = async () => {
     if (!urlInput.trim()) return;
 
+    // 网页抓取返回的内容会追加到输入框，不直接写库，避免误存噪声页面。
     setIsProcessing(true);
     toast("正在抓取网页内容...", "info");
 
@@ -211,7 +230,7 @@ export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
         rows={4}
       />
 
-      {/* URL Input */}
+      {/* 网页抓取输入框：默认折叠，避免主输入区过于复杂。 */}
       {showUrlInput && (
         <div className="flex gap-2">
           <Input
@@ -229,7 +248,7 @@ export function MaterialInput({ onSubmit, isLoading }: MaterialInputProps) {
         </div>
       )}
 
-      {/* Upload buttons */}
+      {/* 导入入口：这些按钮只负责“把外部内容变成文本草稿”。 */}
       <div className="flex gap-2 flex-wrap">
         <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
         <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleFileUpload} className="hidden" />

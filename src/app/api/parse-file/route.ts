@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import mammoth from "mammoth";
 
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB，防止超大文档拖垮服务端解析进程。
+
 // Dynamic import for pdf-parse to avoid ESM issues
 async function parsePdf(buffer: Buffer) {
   const { PDFParse } = await import("pdf-parse");
@@ -26,6 +28,10 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "文件过大，当前最多支持 20MB" }, { status: 413 });
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase();

@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 // POST /api/setup-storage - Create storage bucket
 export async function POST() {
+  // 这是部署初始化辅助接口。生产环境不开放，避免普通登录用户触发管理级操作。
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Storage setup is disabled in production" }, { status: 403 });
+  }
+
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -10,8 +16,18 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Try to create the bucket
-  const { data, error } = await supabase.storage.createBucket("ordknow-public", {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return NextResponse.json({ error: "Missing SUPABASE_SERVICE_ROLE_KEY" }, { status: 500 });
+  }
+
+  // 创建 bucket 需要 Supabase service role；普通 anon 客户端通常没有权限。
+  const serviceClient = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey
+  );
+
+  const { data, error } = await serviceClient.storage.createBucket("ordknow-public", {
     public: true,
     fileSizeLimit: 50 * 1024 * 1024, // 50MB
   });
