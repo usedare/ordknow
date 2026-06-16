@@ -33,17 +33,35 @@ export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
     setMessage("");
     setIsSubmitting(true);
 
+    const email = loginEmail.trim();
     const { error: loginError } = await supabase.auth.signInWithPassword({
-      email: loginEmail.trim(),
+      email,
       password: loginPassword,
     });
 
-    setIsSubmitting(false);
-
     if (loginError) {
-      setError(loginError.message || "登录失败，请检查邮箱和密码");
+      // 某些网络环境下浏览器直连 Supabase 会报 Failed to fetch。
+      // 后备路径改由本站服务端登录并写入同一套 Supabase Cookie。
+      const fallback = await fetch("/auth/password-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: loginPassword }),
+      }).catch(() => null);
+
+      if (fallback?.ok) {
+        setIsSubmitting(false);
+        router.push("/workspace");
+        router.refresh();
+        return;
+      }
+
+      const fallbackData = await fallback?.json().catch(() => null);
+      setIsSubmitting(false);
+      setError(fallbackData?.error || loginError.message || "登录失败，请检查邮箱和密码");
       return;
     }
+
+    setIsSubmitting(false);
 
     router.push("/workspace");
     router.refresh();
