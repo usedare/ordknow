@@ -22,9 +22,9 @@ def evidence_image(name: str, title: str, text_path: Path) -> Path | None:
     if not text_path.exists():
         return None
     lines = text_path.read_text(encoding="utf-8", errors="ignore").splitlines()
-    font_path = Path(r"C:\Windows\Fonts\consola.ttf")
+    font_path = Path(r"C:\Windows\Fonts\msyh.ttc")
     if not font_path.exists():
-        font_path = Path(r"C:\Windows\Fonts\arial.ttf")
+        font_path = Path(r"C:\Windows\Fonts\consola.ttf")
     font = ImageFont.truetype(str(font_path), 22)
     title_font = ImageFont.truetype(str(font_path), 26)
     max_chars = 95
@@ -591,6 +591,14 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         base.add_pic(doc, fig["lint_output"], "图 14 npm run lint 类型检查真实输出", 15.7)
     if "build_output" in fig:
         base.add_pic(doc, fig["build_output"], "图 15 npm run build 生产构建真实输出", 15.7)
+    if "http_checks_output" in fig:
+        base.add_pic(doc, fig["http_checks_output"], "图 16 线上访问与未登录保护真实输出", 15.7)
+    base.callout(
+        doc,
+        "测试口径说明",
+        "本次报告只把能够由命令、HTTP 响应、GitHub 页面、Vercel 页面和 StarUML 导出文件证明的项目标为“通过”。需要登录态、真实测试账号、邮箱 Magic Link、Supabase 数据和 AI Key 才能完整执行的业务闭环，不写成已经通过，而标记为“待登录账号实测”或“代码路径已覆盖”。",
+        "warn",
+    )
     base.heading(doc, "3.功能测试", 1)
     rows = []
     tests = [
@@ -655,17 +663,57 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         ("TC-59", "用户退出", "退出登录", "返回登录页"),
         ("TC-60", "文档交付检查", "打开 DOCX/PDF", "页码、图表、表格正常"),
     ]
+    status_map = {
+        "TC-01": "部分通过：页面可访问；邮件链路待账号",
+        "TC-02": "通过：未登录跳转登录页",
+        "TC-24": "通过：lint 证据",
+        "TC-25": "通过：build 证据",
+        "TC-44": "通过：未登录保护",
+        "TC-47": "通过：线上 200",
+        "TC-48": "通过：线上 200",
+        "TC-49": "通过：仓库可访问",
+        "TC-51": "通过：迁移文件存在",
+        "TC-52": "通过：27 路由",
+        "TC-60": "通过：PDF 100 页",
+    }
+    code_covered = {"TC-26", "TC-27", "TC-28", "TC-29", "TC-31", "TC-32", "TC-33", "TC-34", "TC-38", "TC-39", "TC-40", "TC-41", "TC-42", "TC-43", "TC-45", "TC-46", "TC-50", "TC-53", "TC-54", "TC-55", "TC-56", "TC-57", "TC-58", "TC-59"}
     for tid, name, op, expect in tests:
-        rows.append([tid, name, op, expect, "通过/待联调"])
-    base.table(doc, ["编号", "测试项", "操作步骤", "预期结果", "状态"], rows, [1.6, 2.8, 5.0, 4.4, 1.6], caption="表 12 功能测试用例表")
+        status = status_map.get(tid)
+        if status is None:
+            status = "代码路径已覆盖，待登录账号实测" if tid in code_covered else "待登录账号/API Key 实测"
+        rows.append([tid, name, op, expect, status])
+    base.table(doc, ["编号", "测试项", "操作步骤", "预期结果", "执行状态"], rows, [1.5, 2.3, 4.3, 3.9, 3.4], caption="表 12 功能测试用例矩阵")
     base.heading(doc, "3.1 测试执行记录", 2)
-    for tid, name, op, expect in tests:
-        base.heading(doc, f"3.1.{tests.index((tid, name, op, expect)) + 1} {tid} {name}", 3)
-        base.bullet(doc, f"测试目的：验证“{name}”是否符合序知项目需求。")
-        base.bullet(doc, f"操作步骤：{op}")
-        base.bullet(doc, f"预期结果：{expect}")
-        base.bullet(doc, "实际记录：本地命令类测试以 docs/evidence 中的日志和截图为准；页面类测试以本地或 Vercel 页面截图为准。")
-        base.bullet(doc, "结论：通过/待联调状态在最终截图补充后更新。")
+    base.table(doc, ["证据编号", "实测对象", "执行方式", "实际结果"], [
+        ["E-01", "TypeScript 类型检查", "本地执行 npm run lint", "通过，输出已保存到 docs/evidence/lint.log。"],
+        ["E-02", "生产构建", "本地执行 npm run build", "通过，Next.js 生成 27 个页面/接口路由。"],
+        ["E-03", "线上入口", "HTTP GET https://ordknow.vercel.app/login", "返回 200，登录页可访问。"],
+        ["E-04", "未登录保护", "HTTP 访问 /workspace、/materials、/api/materials、/api/knowledge", "最终跳转到 /login；POST 体系化接口返回 307。"],
+        ["E-05", "GitHub 仓库", "访问 https://github.com/usedare/ordknow", "返回 200，代码和报告已推送。"],
+        ["E-06", "StarUML 图表", "StarUML MCP 生成并通过本地 API 导出 PNG", "6 张核心图已嵌入报告，保留未注册水印。"],
+    ], [1.8, 3.0, 5.3, 5.3], caption="表 13 自动化实测证据清单", variant="evidence")
+    base.heading(doc, "3.2 已实测项目", 2)
+    for item in [
+        "类型检查与生产构建已经由命令行执行，日志和截图均进入 docs/evidence。该部分可证明项目至少在类型层和构建层没有阻塞性错误。",
+        "线上首页和登录页已通过 HTTP 检查，/login 返回 200。由于根路径会进入登录保护，最终地址显示为 /login，符合当前认证设计。",
+        "未登录访问受保护页面和部分接口时会被中间件导向登录页，POST 体系化接口返回 307。该结果说明线上部署已经启用认证保护。",
+        "GitHub 仓库页面可访问，最终提交已经推送到 main 分支；StarUML 图表由 MCP 生成后导出为真实 PNG。"
+    ]:
+        base.bullet(doc, item)
+    base.heading(doc, "3.3 需要登录态继续验收的项目", 2)
+    base.callout(
+        doc,
+        "未写成“已通过”的原因",
+        "素材新增、AI 解析、一键体系化、知识问答、节点重生成、JSON/Markdown 导出等核心业务流都需要 Supabase 登录态、测试账号、邮箱 Magic Link 和可用 AI Provider Key。当前没有测试账号凭证，因此报告中把这些项标记为“待登录账号/API Key 实测”，但代码路径、构建路由和接口保护已完成检查。",
+        "info",
+    )
+    base.table(doc, ["业务流", "当前可验证证据", "后续完整验收动作"], [
+        ["素材入库", "页面、API 路由和数据库表均存在；未登录保护生效。", "提供测试账号后新增一条素材，检查 materials 表和页面列表。"],
+        ["AI 解析", "analyze 路由、Prompt、AI client、错误状态处理已进入构建。", "配置 AI Key 后触发解析，检查 material_analysis 与状态变化。"],
+        ["体系化重构", "systematize 路由、topics/nodes/edges/version 写入逻辑通过构建。", "准备 analyzed 素材后执行一键体系化，检查知识树和版本快照。"],
+        ["知识问答", "qa 路由和上下文组织逻辑通过构建；未登录 POST 被保护。", "登录后输入问题，核对回答是否引用个人知识库内容。"],
+        ["导出", "export 与 export/markdown 路由在构建路由表中存在。", "登录后导出 JSON/Markdown，检查素材、节点、关系和版本是否完整。"],
+    ], [2.6, 6.0, 6.8], caption="表 14 登录态业务流验收计划", variant="plain")
     base.heading(doc, "4.非功能测试", 1)
     for item in [
         "安全测试：验证未登录用户不能访问受保护接口，数据库 RLS 不允许跨用户读取。",
@@ -741,9 +789,9 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         ], [3.5, 11.9], caption=f"表 {title.split()[0]} 部署验证记录")
     base.heading(doc, "8.7 真实截图证据", 2)
     screenshot_specs = [
-        ("github_repo", "图 16 GitHub 仓库真实页面截图"),
-        ("vercel_home", "图 17 Vercel 线上首页真实截图"),
-        ("vercel_login", "图 18 Vercel 登录页真实截图"),
+        ("github_repo", "图 17 GitHub 仓库真实页面截图"),
+        ("vercel_home", "图 18 Vercel 线上首页真实截图"),
+        ("vercel_login", "图 19 Vercel 登录页真实截图"),
     ]
     inserted = False
     for key, caption in screenshot_specs:
@@ -752,23 +800,23 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
             inserted = True
     staruml_keys = sorted(key for key in fig if key.startswith("staruml_"))
     for idx, key in enumerate(staruml_keys, 1):
-        base.add_pic(doc, fig[key], f"图 {18 + idx} StarUML 图表真实截图 {idx}", 15.7)
+        base.add_pic(doc, fig[key], f"图 {19 + idx} StarUML 图表真实截图 {idx}", 15.7)
         inserted = True
     if not inserted:
         base.para(doc, "当前未检测到可嵌入的页面截图文件。生成正式终稿前，应先运行页面截图流程，并将截图保存到 docs/evidence/screenshots 目录。")
     base.heading(doc, "9.截图证据索引", 1)
     base.table(doc, ["截图名称", "来源", "证明内容"], [
-        ["npm run lint 输出图", "docs/evidence/lint.log 生成", "证明 TypeScript 类型检查通过。"],
-        ["npm run build 输出图", "docs/evidence/build.log 生成", "证明 Next.js 生产构建通过并生成路由表。"],
+        ["npm run lint 输出图", "lint.log", "TypeScript 类型检查通过。"],
+        ["npm run build 输出图", "build.log", "Next.js 生产构建通过，生成路由表。"],
+        ["HTTP 检查输出图", "http_checks.log", "线上入口可访问，未登录访问进入登录保护。"],
         ["StarUML 总体流程图", "StarUML 当前项目", "证明流程图由 StarUML 绘制。"],
         ["StarUML 时序图组", "StarUML 当前项目", "证明核心业务时序图由 StarUML 绘制。"],
         ["StarUML ER 图", "StarUML 当前项目", "证明数据库关系图由 StarUML 绘制。"],
-        ["GitHub 仓库截图", "https://github.com/usedare/ordknow", "证明代码已上传到指定仓库。"],
-        ["Vercel 线上截图", "https://ordknow.vercel.app", "证明项目已部署并可访问。"],
+        ["GitHub 仓库截图", "usedare/ordknow", "代码已上传到指定仓库。"],
+        ["Vercel 线上截图", "ordknow.vercel.app", "项目已部署并可访问。"],
         ["登录页截图", "本地或线上页面", "证明用户入口可访问。"],
-        ["工作台截图", "本地登录后页面", "证明核心三栏工作台存在。"],
-        ["设置页截图", "本地登录后页面", "证明模型配置和导出功能存在。"],
-    ], [3.8, 4.6, 7.0], caption="表 19 截图证据索引表")
+        ["登录态页面截图", "需测试账号后补截", "未嵌入真实登录态截图，避免伪造。"],
+    ], [3.8, 4.6, 7.0], caption="表 19 截图证据索引表", trailing_space=False)
 
 
 def make_figures() -> dict[str, Path]:
@@ -798,10 +846,13 @@ def make_figures() -> dict[str, Path]:
     ])
     lint_img = evidence_image("lint_output.png", "npm run lint - TypeScript 类型检查输出", OUT / "evidence" / "lint.log")
     build_img = evidence_image("build_output.png", "npm run build - Next.js 生产构建输出", OUT / "evidence" / "build.log")
+    http_img = evidence_image("http_checks_output.png", "线上访问与未登录保护 HTTP 检查输出", OUT / "evidence" / "http_checks.log")
     if lint_img:
         fig["lint_output"] = lint_img
     if build_img:
         fig["build_output"] = build_img
+    if http_img:
+        fig["http_checks_output"] = http_img
     screenshots = OUT / "evidence" / "screenshots"
     screenshot_files = {
         "github_repo": "github_repo.png",

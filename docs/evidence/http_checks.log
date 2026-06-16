@@ -1,0 +1,11 @@
+序知线上与权限保护 HTTP 检查
+executed_at=2026-06-15 23:06:40
+GET https://ordknow.vercel.app -> 200; final=https://ordknow.vercel.app/login; 线上首页可访问; body=<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8"/><meta name="viewport" conte
+GET https://ordknow.vercel.app/login -> 200; final=https://ordknow.vercel.app/login; 登录页可访问; body=<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8"/><meta name="viewport" conte
+GET https://ordknow.vercel.app/workspace -> 200; final=https://ordknow.vercel.app/login; 未登录工作台会跳转到登录页; body=<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8"/><meta name="viewport" conte
+GET https://ordknow.vercel.app/materials -> 200; final=https://ordknow.vercel.app/login; 未登录素材页会跳转到登录页; body=<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8"/><meta name="viewport" conte
+GET https://ordknow.vercel.app/api/materials -> 200; final=https://ordknow.vercel.app/login; 未登录素材接口被中间件保护并跳转登录; body=<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8"/><meta name="viewport" conte
+GET https://ordknow.vercel.app/api/knowledge -> 200; final=https://ordknow.vercel.app/login; 未登录知识接口被中间件保护并跳转登录; body=<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8"/><meta name="viewport" conte
+POST https://ordknow.vercel.app/api/qa -> ERROR URLError: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010)>; 未登录问答接口返回重定向
+POST https://ordknow.vercel.app/api/systematize -> 307; final=https://ordknow.vercel.app/api/systematize; 未登录体系化接口返回重定向; body=Redirecting... 
+GET https://github.com/usedare/ordknow -> 200; final=https://github.com/usedare/ordknow; GitHub 仓库页面可访问; body=      <!DOCTYPE html> <html   lang="en"      data-color-mode="auto" data-light-theme="ligh

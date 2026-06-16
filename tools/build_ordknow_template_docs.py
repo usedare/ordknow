@@ -137,9 +137,83 @@ def margins(cell, top=80, bottom=80, start=110, end=110):
         e.set(qn("w:type"), "dxa")
 
 
-def table(doc, headers, rows, widths, caption=None):
+def _table_variant(headers, caption, variant):
+    if variant:
+        return variant
+    caption = caption or ""
+    first = headers[0] if headers else ""
+    if first == "字段":
+        return "data"
+    if first == "编号" or "测试" in caption:
+        return "test"
+    if "截图" in caption or "证据" in caption:
+        return "evidence"
+    if len(headers) == 2 and first in {"项目", "说明项", "设计项", "部署项", "验证项", "检查点"}:
+        return "kv"
+    if len(headers) == 2:
+        return "plain"
+    return "blue"
+
+
+def _style_tokens(variant):
+    return {
+        "blue": {
+            "header_fill": TABLE_BLUE,
+            "header_text": "FFFFFF",
+            "row_fills": [LIGHT_ROW, "FFFFFF"],
+            "border": GRID,
+            "header_font": "黑体",
+            "body_size": 9.5,
+        },
+        "plain": {
+            "header_fill": "F3F6FA",
+            "header_text": INK,
+            "row_fills": ["FFFFFF", "F8FAFC"],
+            "border": "CCD6E0",
+            "header_font": "黑体",
+            "body_size": 9.5,
+        },
+        "kv": {
+            "header_fill": "FFFFFF",
+            "header_text": "1F4E79",
+            "row_fills": ["FFFFFF"],
+            "label_fill": "EEF3F8",
+            "border": "B8C7D6",
+            "header_font": "黑体",
+            "body_size": 9.5,
+        },
+        "data": {
+            "header_fill": "3F4B5B",
+            "header_text": "FFFFFF",
+            "row_fills": ["F7F9FB", "FFFFFF"],
+            "border": "B9C0C8",
+            "header_font": "黑体",
+            "body_size": 9.2,
+        },
+        "test": {
+            "header_fill": "595959",
+            "header_text": "FFFFFF",
+            "row_fills": ["F2F2F2", "FFFFFF"],
+            "border": "C8C8C8",
+            "header_font": "黑体",
+            "body_size": 9.0,
+        },
+        "evidence": {
+            "header_fill": "1F4E79",
+            "header_text": "FFFFFF",
+            "row_fills": ["EAF3F8", "FFFFFF"],
+            "border": "9EB6CC",
+            "header_font": "黑体",
+            "body_size": 9.3,
+        },
+    }[variant]
+
+
+def table(doc, headers, rows, widths, caption=None, variant=None, trailing_space=True):
+    variant = _table_variant(headers, caption, variant)
+    tokens = _style_tokens(variant)
     if caption:
-        p = para(doc, caption, align=WD_ALIGN_PARAGRAPH.CENTER, font="黑体", size=10.5, bold=True, after=3)
+        p = para(doc, caption, align=WD_ALIGN_PARAGRAPH.CENTER, font="黑体", size=10.5, bold=True, after=4)
     t = doc.add_table(rows=1, cols=len(headers))
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
     t.autofit = False
@@ -147,26 +221,60 @@ def table(doc, headers, rows, widths, caption=None):
         c = t.rows[0].cells[i]
         c.width = Cm(widths[i])
         c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-        shade(c, TABLE_BLUE)
-        borders(c)
+        shade(c, tokens["header_fill"])
+        borders(c, tokens["border"])
         margins(c)
         p = c.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         r = p.add_run(h)
-        set_run(r, font="黑体", size=10, color="FFFFFF", bold=True)
+        set_run(r, font=tokens["header_font"], size=10, color=tokens["header_text"], bold=True)
     for ri, row in enumerate(rows):
         cells = t.add_row().cells
         for i, val in enumerate(row):
             c = cells[i]
             c.width = Cm(widths[i])
             c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            shade(c, LIGHT_ROW if ri % 2 == 0 else "FFFFFF")
-            borders(c)
+            if variant == "kv" and i == 0:
+                shade(c, tokens["label_fill"])
+            else:
+                fills = tokens["row_fills"]
+                shade(c, fills[ri % len(fills)])
+            borders(c, tokens["border"])
             margins(c)
             p = c.paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER if i == 0 or len(val) < 10 else WD_ALIGN_PARAGRAPH.LEFT
             r = p.add_run(val)
-            set_run(r, size=9.5, color=INK, bold=(i == 0 and len(val) < 8))
+            set_run(r, size=tokens["body_size"], color=INK, bold=(i == 0 and (variant == "kv" or len(val) < 8)))
+    if trailing_space:
+        para(doc, "", after=2)
+    return t
+
+
+def callout(doc, title, body, tone="info"):
+    palette = {
+        "info": ("EAF3F8", "1F4E79"),
+        "warn": ("FFF4D6", "7A5A00"),
+        "ok": ("EAF7EF", "276749"),
+        "plain": ("F5F5F5", "555555"),
+    }
+    fill, accent = palette.get(tone, palette["info"])
+    t = doc.add_table(rows=1, cols=1)
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    t.autofit = False
+    cell = t.rows[0].cells[0]
+    cell.width = Cm(15.4)
+    shade(cell, fill)
+    borders(cell, accent)
+    margins(cell, top=120, bottom=120, start=160, end=160)
+    p = cell.paragraphs[0]
+    p.paragraph_format.space_after = Pt(2)
+    r = p.add_run(title)
+    set_run(r, font="黑体", size=10.5, color=accent, bold=True)
+    p2 = cell.add_paragraph()
+    p2.paragraph_format.space_after = Pt(0)
+    p2.paragraph_format.line_spacing = 1.22
+    r2 = p2.add_run(body)
+    set_run(r2, size=9.8, color=INK)
     para(doc, "", after=2)
     return t
 
