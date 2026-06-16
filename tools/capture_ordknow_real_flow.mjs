@@ -134,6 +134,30 @@ async function waitForUrl(cdp, expected, timeout = 45000) {
   return currentUrl(cdp).catch(() => "");
 }
 
+async function waitForLoginOutcome(cdp, timeout = 60000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const url = await currentUrl(cdp).catch(() => "");
+    const text = await bodyText(cdp).catch(() => "");
+    if (url.includes("/workspace")) return { ok: true, url, text };
+    if (/Invalid|fetch failed|登录失败|Email not confirmed|密码|错误|failed/i.test(text) && !text.includes("登录中...")) {
+      return { ok: false, url, text };
+    }
+    await delay(800);
+  }
+  return { ok: false, url: await currentUrl(cdp).catch(() => ""), text: await bodyText(cdp).catch(() => "") };
+}
+
+async function waitForExpression(cdp, expression, timeout = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const ok = await evaluate(cdp, expression, 5000).catch(() => false);
+    if (ok) return true;
+    await delay(800);
+  }
+  return false;
+}
+
 async function capture(cdp, name, label) {
   await delay(600);
   const metrics = await cdp.send("Page.getLayoutMetrics").catch(() => null);
@@ -162,6 +186,20 @@ async function clickText(cdp, text) {
       const text = ${jsString(text)};
       const nodes = [...document.querySelectorAll('button,a,label')];
       const el = nodes.find((n) => (n.innerText || n.textContent || '').trim().includes(text));
+      if (!el) return false;
+      el.click();
+      return true;
+    })()`,
+  );
+}
+
+async function clickExactText(cdp, text) {
+  return evaluate(
+    cdp,
+    `(() => {
+      const text = ${jsString(text)};
+      const nodes = [...document.querySelectorAll('button,a,label')];
+      const el = nodes.find((n) => (n.innerText || n.textContent || '').trim() === text);
       if (!el) return false;
       el.click();
       return true;
@@ -233,13 +271,14 @@ try {
       return 'submitted';
     })()`,
   );
-  const afterLoginUrl = await waitForUrl(cdp, /\/workspace|\/login/, 45000);
+  const outcome = await waitForLoginOutcome(cdp, 60000);
+  const afterLoginUrl = outcome.url;
   note(`登录提交后 URL: ${afterLoginUrl}`);
   await delay(1200);
   await capture(cdp, "real_02_login_result.png", "登录结果截图");
 
-  if (!afterLoginUrl.includes("/workspace")) {
-    note(`登录未进入工作台，页面文本摘要: ${(await bodyText(cdp)).slice(0, 600).replace(/\s+/g, " ")}`);
+  if (!outcome.ok) {
+    note(`登录未进入工作台，页面文本摘要: ${outcome.text.slice(0, 600).replace(/\s+/g, " ")}`);
     throw new Error("Login did not reach /workspace");
   }
 
@@ -252,31 +291,68 @@ try {
     "预期结果是系统能把这条素材保存到个人素材库，后续可继续解析和体系化。",
   ].join("\\n");
 
-  await evaluate(
+  const workspaceReady = await waitForExpression(
     cdp,
-    `(() => {
-      const setValue = (el, value) => {
-        const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-        const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-        setter.call(el, value);
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-      };
-      setValue(document.querySelector('input[placeholder="标题（可选）"]'), ${jsString(materialTitle)});
-      setValue(document.querySelector('textarea[placeholder="输入你的素材内容..."]'), ${jsString(materialBody)});
-      return true;
-    })()`,
+    `Boolean(document.querySelector('input[placeholder="标题（可选）"]') && document.querySelector('textarea[placeholder="输入你的素材内容..."]'))`,
+    35000,
   );
-  await capture(cdp, "real_04_workspace_filled_material.png", "工作台填写素材截图");
-  await clickText(cdp, "新增素材");
-  await delay(2500);
-  note(`新增素材提交: ${materialTitle}`);
-  await capture(cdp, "real_05_workspace_after_add.png", "新增素材后工作台截图");
+  note(`工作台输入区就绪: ${workspaceReady}`);
+  if (workspaceReady) {
+    await evaluate(
+      cdp,
+      `(() => {
+        const setValue = (el, value) => {
+          if (!el) return false;
+          const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+          const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+          setter.call(el, value);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        };
+        return [
+          setValue(document.querySelector('input[placeholder="标题（可选）"]'), ${jsString(materialTitle)}),
+          setValue(document.querySelector('textarea[placeholder="输入你的素材内容..."]'), ${jsString(materialBody)}),
+        ];
+      })()`,
+    );
+    await capture(cdp, "real_04_workspace_filled_material.png", "工作台填写素材截图");
+    await clickText(cdp, "新增素材");
+    await delay(4500);
+    note(`新增素材提交: ${materialTitle}`);
+    await capture(cdp, "real_05_workspace_after_add.png", "新增素材后工作台截图");
+  } else {
+    note(`工作台停留在加载或错误状态，跳过新增素材。页面摘要: ${(await bodyText(cdp)).slice(0, 500).replace(/\\s+/g, " ")}`);
+    await capture(cdp, "real_04_workspace_load_state.png", "工作台加载状态截图");
+  }
 
   await goto(cdp, "/materials", "打开素材页");
+  const materialsReady = await waitForExpression(
+    cdp,
+    `(() => {
+      const text = document.body?.innerText || '';
+      return !text.includes('加载中...') && (text.includes('新增素材') || text.includes('暂无素材') || text.includes(${jsString(materialTitle)}));
+    })()`,
+    45000,
+  );
+  note(`素材页业务内容就绪: ${materialsReady}`);
   await capture(cdp, "real_06_materials_page.png", "素材页截图");
   const textAfterAdd = await bodyText(cdp);
   note(`素材页是否出现测试素材: ${textAfterAdd.includes(materialTitle)}`);
+
+  const selectedMaterialOnPage = await clickText(cdp, materialTitle);
+  note(`素材页选中新建素材: ${selectedMaterialOnPage}`);
+  if (selectedMaterialOnPage) {
+    await waitForExpression(
+      cdp,
+      `(() => {
+        const text = document.body?.innerText || '';
+        return text.includes(${jsString(materialBody.split("\\n")[0])}) || text.includes('AI 解析') || text.includes('编辑');
+      })()`,
+      20000,
+    );
+    await capture(cdp, "real_07_material_detail.png", "素材详情与解析入口截图");
+  }
 
   const clickedAnalyze = await evaluate(
     cdp,
@@ -289,13 +365,43 @@ try {
   );
   note(`解析按钮点击: ${clickedAnalyze}`);
   await delay(4500);
-  await capture(cdp, "real_07_materials_after_analyze_click.png", "点击解析后的素材页截图");
+  await capture(cdp, "real_08_materials_after_analyze_click.png", "点击解析后的素材页截图");
 
   await goto(cdp, "/knowledge", "打开知识体系页");
-  await capture(cdp, "real_08_knowledge_page.png", "知识体系页截图");
+  const knowledgeReady = await waitForExpression(
+    cdp,
+    `(() => {
+      const text = document.body?.innerText || '';
+      return !text.includes('加载中...') && (text.includes('知识体系') || text.includes('暂无知识体系') || text.includes('一键体系化'));
+    })()`,
+    45000,
+  );
+  note(`知识体系页业务内容就绪: ${knowledgeReady}`);
+  await capture(cdp, "real_09_knowledge_page.png", "知识体系页截图");
+
+  const clickedKnowledgeNode = await clickExactText(cdp, "AI定义");
+  note(`知识体系页选中 AI定义 节点: ${clickedKnowledgeNode}`);
+  if (clickedKnowledgeNode) {
+    await waitForExpression(
+      cdp,
+      `(() => {
+        const text = document.body?.innerText || '';
+        return text.includes('来源素材') || text.includes('相关节点') || text.includes('AI定义');
+      })()`,
+      20000,
+    );
+    await capture(cdp, "real_10_knowledge_node_detail.png", "知识节点详情截图");
+  }
+
+  const clickedGraphView = await clickText(cdp, "图谱");
+  note(`知识体系页切换图谱视图: ${clickedGraphView}`);
+  if (clickedGraphView) {
+    await delay(1800);
+    await capture(cdp, "real_11_knowledge_graph.png", "知识图谱视图截图");
+  }
 
   await goto(cdp, "/qa", "打开问答页");
-  await capture(cdp, "real_09_qa_empty.png", "问答页初始截图");
+  await capture(cdp, "real_12_qa_empty.png", "问答页初始截图");
   const qaFilled = await evaluate(
     cdp,
     `(() => {
@@ -321,11 +427,11 @@ try {
       })()`,
     );
     await delay(6500);
-    await capture(cdp, "real_10_qa_after_question.png", "问答提交后截图");
+    await capture(cdp, "real_13_qa_after_question.png", "问答提交后截图");
   }
 
   await goto(cdp, "/settings", "打开设置页");
-  await capture(cdp, "real_11_settings_page.png", "设置页截图");
+  await capture(cdp, "real_14_settings_page.png", "设置页截图");
 
   await writeFile(logPath, notes.join("\n"), "utf8");
   note(`测试日志已保存: ${logPath}`);

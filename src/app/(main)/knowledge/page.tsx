@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Activity, AlertTriangle, Info, GitBranch } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { getAIRequestHeaders } from "@/lib/client-ai-config";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 interface HealthIssue {
   type: "duplicate" | "orphan" | "empty_content";
@@ -50,29 +51,33 @@ export default function KnowledgePage() {
 
   const fetchKnowledge = useCallback(async () => {
     try {
-      // 三个接口并行加载，避免图谱/树状视图互相阻塞。
-      const [topicsRes, edgesRes, nodesRes] = await Promise.all([
-        fetch("/api/knowledge"),
-        fetch("/api/knowledge/edges/all"),
-        fetch("/api/knowledge/nodes/all"),
+      // 三个接口并行加载。使用 allSettled 是为了避免某个图谱接口慢，
+      // 导致整个知识体系页一直停在“加载中”。
+      const [topicsRes, edgesRes, nodesRes] = await Promise.allSettled([
+        fetchWithTimeout("/api/knowledge"),
+        fetchWithTimeout("/api/knowledge/edges/all"),
+        fetchWithTimeout("/api/knowledge/nodes/all"),
       ]);
-      if (topicsRes.ok) {
-        const data = await topicsRes.json();
+
+      if (topicsRes.status === "fulfilled" && topicsRes.value.ok) {
+        const data = await topicsRes.value.json();
         setTopics(data);
       }
-      if (edgesRes.ok) {
-        const data = await edgesRes.json();
+      if (edgesRes.status === "fulfilled" && edgesRes.value.ok) {
+        const data = await edgesRes.value.json();
         setEdges(data);
       }
-      if (nodesRes.ok) {
-        const data = await nodesRes.json();
+      if (nodesRes.status === "fulfilled" && nodesRes.value.ok) {
+        const data = await nodesRes.value.json();
         setAllNodes(data);
       }
     } catch (err) {
       console.error("Failed to fetch knowledge:", err);
+      toast("知识体系加载失败，请稍后重试", "error");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchKnowledge();
@@ -83,11 +88,11 @@ export default function KnowledgePage() {
     toast("正在生成知识体系，可能需要一些时间...", "info");
     try {
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
-      const res = await fetch("/api/systematize", {
+      const res = await fetchWithTimeout("/api/systematize", {
         method: "POST",
         headers: getAIRequestHeaders(),
         body: JSON.stringify({ model }),
-      });
+      }, 120000);
       if (res.ok) {
         await fetchKnowledge();
         toast("知识体系生成完成！", "success");
@@ -104,7 +109,7 @@ export default function KnowledgePage() {
   const handleHealthCheck = async () => {
     setIsChecking(true);
     try {
-      const res = await fetch("/api/knowledge/health");
+      const res = await fetchWithTimeout("/api/knowledge/health");
       if (res.ok) {
         const data = await res.json();
         setHealthReport(data);
@@ -124,7 +129,7 @@ export default function KnowledgePage() {
     setSelectedNode(node);
     try {
       // 选中节点后再加载来源素材，减少初次进入页面的数据量。
-      const res = await fetch(`/api/knowledge/node/${node.id}/materials`);
+      const res = await fetchWithTimeout(`/api/knowledge/node/${node.id}/materials`);
       if (res.ok) {
         const data = await res.json();
         setSourceMaterials(data);

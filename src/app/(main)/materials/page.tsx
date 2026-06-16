@@ -7,6 +7,7 @@ import { MaterialList } from "@/components/materials/material-list";
 import { MaterialDetail } from "@/components/materials/material-detail";
 import { useToast } from "@/components/ui/toast";
 import { getAIRequestHeaders } from "@/lib/client-ai-config";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 const STATUS_OPTIONS: Array<{ value: MaterialStatus | "all"; label: string }> = [
   { value: "all", label: "全部状态" },
@@ -26,13 +27,20 @@ export default function MaterialsPage() {
   const [statusFilter, setStatusFilter] = useState<MaterialStatus | "all">("all");
 
   const fetchMaterials = useCallback(async () => {
-    const res = await fetch("/api/materials");
-    if (res.ok) {
-      const data = await res.json();
-      setMaterials(data);
+    try {
+      const res = await fetchWithTimeout("/api/materials");
+      if (res.ok) {
+        const data = await res.json();
+        setMaterials(data);
+      } else {
+        toast("素材列表加载失败", "error");
+      }
+    } catch {
+      toast("素材列表加载超时，请稍后重试", "error");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchMaterials();
@@ -40,17 +48,21 @@ export default function MaterialsPage() {
 
   const handleSelect = async (material: Material) => {
     setSelectedMaterial(material);
-    const res = await fetch(`/api/materials/${material.id}`);
-    if (res.ok) {
-      const data = await res.json();
-      setAnalysis(data.analysis);
+    try {
+      const res = await fetchWithTimeout(`/api/materials/${material.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalysis(data.analysis);
+      }
+    } catch {
+      toast("素材详情加载超时", "error");
     }
   };
 
   const handleCreate = async (title: string, content: string) => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/materials", {
+      const res = await fetchWithTimeout("/api/materials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, raw_content: content }),
@@ -70,7 +82,7 @@ export default function MaterialsPage() {
 
   const handleUpdate = async (id: string, title: string, content: string) => {
     try {
-      const res = await fetch(`/api/materials/${id}`, {
+      const res = await fetchWithTimeout(`/api/materials/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, raw_content: content }),
@@ -90,7 +102,7 @@ export default function MaterialsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/materials/${id}`, { method: "DELETE" });
+      const res = await fetchWithTimeout(`/api/materials/${id}`, { method: "DELETE" });
       if (res.ok) {
         setMaterials((prev) => prev.filter((m) => m.id !== id));
         if (selectedMaterial?.id === id) {
@@ -110,11 +122,11 @@ export default function MaterialsPage() {
     toast("正在 AI 解析...", "info");
     try {
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
-      const res = await fetch("/api/analyze", {
+      const res = await fetchWithTimeout("/api/analyze", {
         method: "POST",
         headers: getAIRequestHeaders(),
         body: JSON.stringify({ material_id: id, model }),
-      });
+      }, 60000);
       if (res.ok) {
         await fetchMaterials();
         if (selectedMaterial?.id === id) await handleSelect(selectedMaterial);

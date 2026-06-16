@@ -1,11 +1,33 @@
-[2026-06-16T03:03:09.445Z] Base URL: https://ordknow.vercel.app
-[2026-06-16T03:03:09.447Z] Chrome PID: 38756
-[2026-06-16T03:03:13.078Z] 打开登录页: https://ordknow.vercel.app/login -> frame=38F77363CD7536E4723FEB06B950CD66 url=https://ordknow.vercel.app/login
-[2026-06-16T03:03:13.774Z] 登录前页面截图: D:\OrdKnow\docs\evidence\screenshots\real_01_login_before.png
-[2026-06-16T03:03:14.472Z] 登录表单填写后截图: D:\OrdKnow\docs\evidence\screenshots\real_01_login_filled.png
-[2026-06-16T03:03:14.488Z] 登录提交后 URL: https://ordknow.vercel.app/login
-[2026-06-16T03:03:16.452Z] 登录结果截图: D:\OrdKnow\docs\evidence\screenshots\real_02_login_result.png
-[2026-06-16T03:03:16.461Z] 登录未进入工作台，页面文本摘要: 序知 输入无序碎片，输出终身知识体系 fetch failed 登录 登录 或 注册新账号 注册
-[2026-06-16T03:03:16.461Z] 流程失败: Error: Login did not reach /workspace
-    at file:///D:/OrdKnow/tools/capture_ordknow_real_flow.mjs:243:11
-[2026-06-16T03:03:17.166Z] 错误现场截图: D:\OrdKnow\docs\evidence\screenshots\real_error.png
+[2026-06-16T08:13:21.875Z] Base URL: https://ordknow.vercel.app
+[2026-06-16T08:13:21.878Z] Chrome PID: 15952
+[2026-06-16T08:13:25.133Z] 打开登录页: https://ordknow.vercel.app/login -> frame=5A915595EAF0F4FBE4F33EA541439199 url=https://ordknow.vercel.app/login
+[2026-06-16T08:13:25.810Z] 登录前页面截图: D:\OrdKnow\docs\evidence\screenshots\real_01_login_before.png
+[2026-06-16T08:13:26.490Z] 登录表单填写后截图: D:\OrdKnow\docs\evidence\screenshots\real_01_login_filled.png
+[2026-06-16T08:13:28.125Z] 登录提交后 URL: https://ordknow.vercel.app/workspace
+[2026-06-16T08:13:30.105Z] 登录结果截图: D:\OrdKnow\docs\evidence\screenshots\real_02_login_result.png
+[2026-06-16T08:13:30.790Z] 工作台初始截图: D:\OrdKnow\docs\evidence\screenshots\real_03_workspace_initial.png
+[2026-06-16T08:13:30.791Z] 工作台输入区就绪: true
+[2026-06-16T08:13:31.495Z] 工作台填写素材截图: D:\OrdKnow\docs\evidence\screenshots\real_04_workspace_filled_material.png
+[2026-06-16T08:13:36.010Z] 新增素材提交: 测试素材-2026-06-16-08-13-30
+[2026-06-16T08:13:36.705Z] 新增素材后工作台截图: D:\OrdKnow\docs\evidence\screenshots\real_05_workspace_after_add.png
+[2026-06-16T08:13:37.853Z] 打开素材页: https://ordknow.vercel.app/materials -> frame=5A915595EAF0F4FBE4F33EA541439199 url=https://ordknow.vercel.app/materials
+[2026-06-16T08:13:37.854Z] 素材页业务内容就绪: true
+[2026-06-16T08:13:38.559Z] 素材页截图: D:\OrdKnow\docs\evidence\screenshots\real_06_materials_page.png
+[2026-06-16T08:13:38.560Z] 素材页是否出现测试素材: true
+[2026-06-16T08:13:38.565Z] 素材页选中新建素材: true
+[2026-06-16T08:13:39.276Z] 素材详情与解析入口截图: D:\OrdKnow\docs\evidence\screenshots\real_07_material_detail.png
+[2026-06-16T08:13:39.279Z] 解析按钮点击: true
+[2026-06-16T08:13:44.510Z] 点击解析后的素材页截图: D:\OrdKnow\docs\evidence\screenshots\real_08_materials_after_analyze_click.png
+[2026-06-16T08:13:45.673Z] 打开知识体系页: https://ordknow.vercel.app/knowledge -> frame=5A915595EAF0F4FBE4F33EA541439199 url=https://ordknow.vercel.app/knowledge
+[2026-06-16T08:13:46.478Z] 知识体系页业务内容就绪: true
+[2026-06-16T08:13:47.159Z] 知识体系页截图: D:\OrdKnow\docs\evidence\screenshots\real_09_knowledge_page.png
+[2026-06-16T08:13:47.167Z] 知识体系页选中 AI定义 节点: true
+[2026-06-16T08:13:47.862Z] 知识节点详情截图: D:\OrdKnow\docs\evidence\screenshots\real_10_knowledge_node_detail.png
+[2026-06-16T08:13:47.866Z] 知识体系页切换图谱视图: true
+[2026-06-16T08:13:50.381Z] 知识图谱视图截图: D:\OrdKnow\docs\evidence\screenshots\real_11_knowledge_graph.png
+[2026-06-16T08:13:51.555Z] 打开问答页: https://ordknow.vercel.app/qa -> frame=5A915595EAF0F4FBE4F33EA541439199 url=https://ordknow.vercel.app/qa
+[2026-06-16T08:13:52.238Z] 问答页初始截图: D:\OrdKnow\docs\evidence\screenshots\real_12_qa_empty.png
+[2026-06-16T08:13:52.241Z] 问答输入框填写: true
+[2026-06-16T08:13:59.457Z] 问答提交后截图: D:\OrdKnow\docs\evidence\screenshots\real_13_qa_after_question.png
+[2026-06-16T08:14:00.911Z] 打开设置页: https://ordknow.vercel.app/settings -> frame=5A915595EAF0F4FBE4F33EA541439199 url=https://ordknow.vercel.app/settings
+[2026-06-16T08:14:01.630Z] 设置页截图: D:\OrdKnow\docs\evidence\screenshots\real_14_settings_page.png

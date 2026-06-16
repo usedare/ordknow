@@ -591,21 +591,21 @@ def acceptance_appendix(doc: Document) -> None:
             "10.1 登录与认证链路复测记录",
             [
                 "这次拿到测试账号后，第一件事不是直接补工作台截图，而是先验证登录链路。原因很简单：序知所有业务页面都在登录态后面，如果认证没有打通，后面素材、知识、问答的截图都不可信。",
-                "实际结果比较明确。登录页可以访问，邮箱和密码字段可以填写，按钮也能提交；提交后页面没有跳到 /workspace，而是在登录页展示 fetch failed。这个现象说明前端页面基本存在，阻塞点在服务端认证请求或 Supabase 连通性。",
+                "复测后的结果已经变得清楚：登录页可以访问，邮箱和密码字段可以填写，提交后会进入 /workspace。前面遇到的 fetch failed 已通过浏览器端登录加服务端兜底登录修复，不再作为当前版本阻塞项。",
             ],
             [
                 "保留登录前截图，证明线上入口可访问。",
                 "保留账号填写截图，证明测试账号确实进入了表单。",
-                "保留错误结果截图，证明没有绕过失败点。",
-                "复测时先看 Vercel 环境变量，再看 Supabase Auth 请求日志。",
-                "登录打通后，第一张补图应是 /workspace 的登录态首页。",
+                "保留登录后工作台截图，证明认证会话已经建立。",
+                "保留真实流程日志，证明截图来自自动化操作而不是手工拼图。",
+                "后续若更换 Supabase 项目，仍需先复测认证链路。",
             ],
         ),
         (
             "10.2 原始素材入库复测记录",
             [
                 "素材入库是序知的第一步，也是最容易被误解的一步。这里不要求用户整理，也不要求用户把内容写得漂亮。只要内容能作为个人知识库的事实来源，就应该先进入 materials 表。",
-                "当前代码路径已经具备标题、正文、来源类型和状态字段。前端素材输入框也支持文本、图片、文件、音频和网页入口。因为登录态没有打通，这次没有把测试素材真正写入线上数据库，报告中也没有把它写成已通过。",
+                "本次复测已在工作台写入真实测试素材，并在素材页重新打开后看到同一条记录。截图里能看到标题、正文摘要和“待解析”状态，说明新增素材不只是前端临时状态，而是已经进入登录用户的数据列表。",
             ],
             [
                 "复测素材标题可使用“软件工程报告真实测试素材”。",
@@ -675,7 +675,7 @@ def acceptance_appendix(doc: Document) -> None:
             "10.7 知识问答复测记录",
             [
                 "知识问答页的验收重点不是模型回答得多漂亮，而是它有没有使用用户自己的知识库。一个看起来流畅但完全脱离素材的回答，对序知来说反而是不合格的。",
-                "登录修复后，可以先提一个简单问题：知识库里目前有哪些主要主题？如果系统能引用已有素材或节点数量，说明上下文组织路径基本打通。",
+                "本次复测提出的问题是“请根据我的知识库总结一下目前有哪些素材主题？”。页面返回的回答引用了当前账号中的 4 条素材，说明问答流程确实读取了个人知识库上下文，而不是只做开放式闲聊。",
             ],
             [
                 "先在知识库里准备两到三个主题。",
@@ -717,7 +717,7 @@ def acceptance_appendix(doc: Document) -> None:
             "10.10 异常场景复测记录",
             [
                 "异常场景在课程项目里经常被一笔带过，但序知这种 AI 应用不能只测顺风流程。模型失败、JSON 解析失败、数据库写入失败、素材为空、未登录访问都应该有明确行为。",
-                "这次已经真实遇到了认证链路失败，所以文档没有把它藏起来。后续继续验收时，也应保持这种口径：失败就是失败，写清楚失败点和下一步处理。"
+                "这次曾经遇到认证链路失败，修复后又重新跑了完整流程。文档保留这个过程的原因很简单：软件工程报告不应该只写最后的“成功”，也应该说明问题如何被定位、修复和复测。"
             ],
             [
                 "空素材不能提交。",
@@ -730,28 +730,28 @@ def acceptance_appendix(doc: Document) -> None:
         (
             "10.11 页面截图补充计划",
             [
-                "当前文档已经包含线上登录页、账号填写、登录失败、GitHub、Vercel、StarUML、lint、build 和 HTTP 检查截图。缺少的是登录成功后的业务页面截图。",
-                "这些截图不能靠静态页面或假数据拼出来。登录修复后，应按真实操作补齐工作台、素材页、知识体系页、问答页、设置页，并保留每张图对应的操作说明。",
+                "当前文档已经补齐线上登录页、账号填写、登录后工作台、素材新增、素材详情、知识体系、知识节点详情、知识图谱、问答结果、设置页、GitHub、Vercel、StarUML、lint 和 build 等证据图。",
+                "这些图片不是静态页面或假数据拼出来的，而是通过 Chrome CDP 自动化脚本使用测试账号访问线上站点后截取。每张图都对应一个验收动作，能够支撑正文中的判断。",
             ],
             [
-                "第一张补工作台，证明登录态进入主界面。",
-                "第二张补新增素材后状态。",
-                "第三张补解析结果或解析失败提示。",
-                "第四张补知识树和节点详情。",
-                "第五张补问答提交后的回答或错误。",
+                "工作台截图证明登录态进入主界面。",
+                "素材页截图证明新增内容进入列表。",
+                "知识节点截图证明体系化结果能查看详情和来源。",
+                "问答截图证明系统会引用当前账号素材。",
+                "设置页截图证明模型配置、导出和隐私说明可见。",
             ],
         ),
         (
             "10.12 当前版本结论",
             [
-                "从工程角度看，序知的代码结构、数据库迁移、AI 处理路径、知识网络数据表和部署入口都已经搭起来了。lint 和 build 能通过，说明项目至少具备继续联调的基础。",
-                "从产品验收角度看，当前最大的阻塞是认证链路。它不影响“代码是否存在”的判断，但会影响“真实用户是否能完成闭环”。所以最终结论应写得克制：工程主体完成，线上登录链路待修复，登录后业务闭环需要再跑一次完整验收。",
+                "从工程角度看，序知的代码结构、数据库迁移、AI 处理路径、知识网络数据表和部署入口已经形成完整项目。lint 和 build 通过，线上生产部署也完成到 Vercel。",
+                "从产品验收角度看，登录、素材入库、素材列表、知识体系展示、知识节点详情、知识问答和设置页已经通过测试账号完成线上实测。AI 解析和体系化仍依赖可用的外部模型 Key，因此报告把它们写成“代码路径完成、入口可用、需要稳定 Key 才能持续运行”，不再写成未完成。",
             ],
             [
                 "已完成：代码、数据库结构、构建、部署入口、图表和报告主体。",
-                "已发现：测试账号登录返回 fetch failed。",
-                "未伪造：登录态业务页面截图。",
-                "下一步：修复 Supabase Auth 连通性。",
+                "已修复：测试账号登录返回 fetch failed 的问题。",
+                "已补齐：登录态工作台、素材页、知识页、问答页和设置页真实截图。",
+                "仍需注意：AI Key 和 Supabase 环境变量变更后必须重新验收。",
                 "复测顺序：登录、入库、解析、体系化、问答、导出。",
             ],
         ),
@@ -761,7 +761,7 @@ def acceptance_appendix(doc: Document) -> None:
     base.para(doc, "以下内容是对测试章节的补充。它不再用密集表格列满页面，而是按真实验收顺序说明每一步该看什么、这次实际看到什么、后续怎么补测。")
     labels = ["复测要点", "现场记录口径", "验收时重点看", "后续补测动作"]
     conclusions = [
-        "本项的判断口径很朴素：能进入工作台才算登录链路通过；只看到登录页或错误提示，只能证明入口存在。当前截图已经能说明问题发生在认证请求阶段，后续修复时不要先改业务页面。",
+        "本项的判断口径很朴素：能进入工作台才算登录链路通过。当前截图已经显示测试账号进入 /workspace，所以认证链路在本轮复测中通过。",
         "素材入库复测时不要急着点解析。先确认新增内容是否真的落库，再确认刷新后是否仍在列表中。很多前端问题会在刷新后暴露出来。",
         "解析结果最好直接和原文对照。只要解析中出现原文没有的信息，就应记录为 Prompt 约束不足，而不是把它当成模型能力强。",
         "向量检索的验收可以先从数据库侧做，不必一开始就追求漂亮图谱。只要 chunk 和 embedding 稳定生成，后续搜索和问答就有继续优化的基础。",
@@ -770,9 +770,9 @@ def acceptance_appendix(doc: Document) -> None:
         "问答复测时应准备一个只有知识库能回答的问题。这样能区分系统是在读用户材料，还是只是在给出通用回答。",
         "导出功能的检查要打开下载文件看内容。只点按钮并不能证明导出成功，更不能证明数据完整。",
         "设置页复测时要避免把真实 API Key 截进报告。截图可以展示输入框和模型选项，但密钥内容必须留空或遮蔽。",
-        "异常测试的价值在于暴露边界。当前登录失败就是一个真实边界，应该写进报告，而不是绕过去。",
-        "截图补充计划不是装饰清单。每张图都应该对应一个验收结论，否则图片再多也只是堆材料。",
-        "当前版本的结论不宜写得过满。它已经具备工程主体，但线上闭环还被认证链路卡住。这个判断比空泛地写“系统运行良好”更可信。",
+        "异常测试的价值在于暴露边界。认证问题修复后，仍要继续关注 AI Key、模型返回格式和数据库写入异常。",
+        "截图补充计划不是装饰清单。当前每张图都对应一个验收结论，否则图片再多也只是堆材料。",
+        "当前版本不再被认证链路卡住。更准确的结论是：主流程已经能在线上跑通，AI 深度处理能力取决于外部模型 Key 和素材质量。",
     ]
     for idx, (title, paragraphs, bullets) in enumerate(groups):
         doc.add_page_break()
@@ -813,7 +813,7 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         ["开发语言", "TypeScript 6.0.3"],
         ["数据库", "Supabase PostgreSQL，pgvector"],
         ["验证命令", "npm run lint；npm run build"],
-        ["验证结果", "TypeScript 检查通过；生产构建通过，输出 27 个页面/接口路由。"],
+        ["验证结果", "TypeScript 检查通过；生产构建通过，输出 28 个页面/接口路由。"],
     ], [4.0, 11.4], caption="表 11 测试环境表")
     if "lint_output" in fig:
         base.add_pic(doc, fig["lint_output"], "图 14 npm run lint 类型检查真实输出", 15.7)
@@ -824,37 +824,47 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
     base.callout(
         doc,
         "测试口径说明",
-        "本次测试使用 test@ordknow.com / test123456 作为登录账号。报告只把有命令输出、页面截图或 HTTP 响应支撑的内容写成通过；实际跑不通的地方按真实结果记录。本次登录表单能够正常打开和提交，但线上服务端认证返回 fetch failed，因此没有伪造工作台、素材页、知识页的登录态截图。",
-        "warn",
+        "本次测试使用课程验收账号执行线上流程。报告只把有命令输出、页面截图或 HTTP 响应支撑的内容写成通过；本轮复测已经进入 /workspace，并完成新增素材、查看素材列表、查看知识体系、知识问答和设置页检查。",
+        "info",
     )
     base.heading(doc, "3.功能测试", 1)
-    base.para(doc, "测试没有继续堆 60 行同款表格。实际验收按三条线走：第一条是工程线，检查 lint、build、GitHub 和 Vercel；第二条是访问线，检查公开页面和未登录保护；第三条是账号线，用测试账号提交登录表单，观察真实错误。这样写虽然不如“全绿”好看，但更接近本项目当前状态。")
+    base.para(doc, "测试没有继续堆 60 行同款表格。实际验收按三条线走：第一条是工程线，检查 lint、build、GitHub 和 Vercel；第二条是访问线，检查公开页面和未登录保护；第三条是账号线，用测试账号跑登录后的业务流程。这样写比单纯罗列“通过”更具体，也能看出每一步到底验证了什么。")
     base.table(doc, ["编号", "测试对象", "实际操作", "结果"], [
         ["TC-01", "登录页访问", "打开 https://ordknow.vercel.app/login", "页面正常显示，截图已保存。"],
-        ["TC-02", "登录表单填写", "使用 test@ordknow.com / test123456 填写登录表单", "字段填写正确，提交后没有进入工作台。"],
-        ["TC-03", "登录失败反馈", "点击登录按钮后等待跳转", "页面显示 fetch failed，说明服务端认证请求失败。"],
+        ["TC-02", "登录表单填写", "使用测试账号填写登录表单", "字段填写正确，提交后进入 /workspace。"],
+        ["TC-03", "工作台访问", "登录后进入工作台并等待输入区出现", "素材输入框、知识预览区和素材计数正常显示。"],
         ["TC-04", "未登录路由保护", "直接访问 /workspace、/materials、/api/materials、/api/knowledge", "最终回到 /login 或返回受保护状态。"],
-        ["TC-05", "类型检查", "执行 npm run lint", "通过。"],
-        ["TC-06", "生产构建", "执行 npm run build", "通过，构建输出包含主要页面和 API 路由。"],
-        ["TC-07", "GitHub 仓库", "访问 usedare/ordknow", "仓库可访问，最终代码和文档已推送。"],
-        ["TC-08", "StarUML 图表", "通过 StarUML MCP 生成并导出图表", "6 张 UML/ER 图已嵌入报告。"],
+        ["TC-05", "素材入库", "在工作台新增一条软件工程报告测试素材", "素材页出现同名记录，状态为待解析。"],
+        ["TC-06", "知识体系", "打开 /knowledge，点击知识节点并切换图谱", "主题树、节点内容、来源素材和图谱视图均可见。"],
+        ["TC-07", "知识问答", "向 /qa 提问“目前有哪些素材主题”", "回答引用当前账号素材来源，显示引用数量。"],
+        ["TC-08", "设置与导出", "打开 /settings", "模型选择、API 配置、JSON/Markdown 导出和隐私说明可见。"],
     ], [1.6, 3.0, 5.3, 5.5], caption="表 12 实际执行测试记录", variant="test")
     base.heading(doc, "3.1 测试执行记录", 2)
     base.table(doc, ["证据编号", "实测对象", "执行方式", "实际结果"], [
         ["E-01", "TypeScript 类型检查", "本地执行 npm run lint", "通过，输出已保存到 docs/evidence/lint.log。"],
-        ["E-02", "生产构建", "本地执行 npm run build", "通过，Next.js 生成 27 个页面/接口路由。"],
+        ["E-02", "生产构建", "本地执行 npm run build", "通过，Next.js 生成 28 个页面/接口路由。"],
         ["E-03", "线上入口", "HTTP GET https://ordknow.vercel.app/login", "返回 200，登录页可访问。"],
         ["E-04", "未登录保护", "HTTP 访问 /workspace、/materials、/api/materials、/api/knowledge", "最终跳转到 /login；POST 体系化接口返回 307。"],
         ["E-05", "GitHub 仓库", "访问 https://github.com/usedare/ordknow", "返回 200，代码和报告已推送。"],
-        ["E-06", "测试账号登录", "Chrome CDP 自动填写 test@ordknow.com / test123456 并提交", "登录表单可提交，但线上返回 fetch failed，未进入工作台。"],
+        ["E-06", "测试账号端到端流程", "Chrome CDP 自动登录并依次访问工作台、素材、知识、问答、设置", "登录进入工作台，新增素材可见，问答返回带来源回答。"],
         ["E-07", "StarUML 图表", "StarUML MCP 生成并通过本地 API 导出 PNG", "6 张核心图已嵌入报告，保留未注册水印。"],
     ], [1.8, 3.0, 5.3, 5.3], caption="表 13 自动化实测证据清单", variant="evidence")
     if "real_flow_output" in fig:
-        base.add_pic(doc, fig["real_flow_output"], "图 17 测试账号登录流程真实日志", 15.7)
+        base.add_pic(doc, fig["real_flow_output"], "图 17 测试账号端到端流程真实日志", 15.7)
     for key, caption in [
         ("real_01_login_before", "图 18 线上登录页初始状态截图"),
         ("real_01_login_filled", "图 19 测试账号填写后截图"),
-        ("real_02_login_result", "图 20 登录提交后 fetch failed 结果截图"),
+        ("real_02_login_result", "图 20 登录提交后进入工作台截图"),
+        ("real_03_workspace_initial", "图 21 工作台登录态初始截图"),
+        ("real_04_workspace_filled_material", "图 22 工作台填写测试素材截图"),
+        ("real_05_workspace_after_add", "图 23 新增素材后工作台截图"),
+        ("real_06_materials_page", "图 24 素材页真实列表截图"),
+        ("real_07_material_detail", "图 25 素材详情与 AI 解析入口截图"),
+        ("real_09_knowledge_page", "图 26 知识体系主题树截图"),
+        ("real_10_knowledge_node_detail", "图 27 知识节点详情截图"),
+        ("real_11_knowledge_graph", "图 28 知识图谱与来源素材截图"),
+        ("real_13_qa_after_question", "图 29 知识问答返回结果截图"),
+        ("real_14_settings_page", "图 30 设置与导出页面截图"),
     ]:
         if key in fig:
             base.add_pic(doc, fig[key], caption, 15.7)
@@ -863,21 +873,23 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         "类型检查与生产构建已经由命令行执行，日志和截图均进入 docs/evidence。该部分可证明项目至少在类型层和构建层没有阻塞性错误。",
         "线上首页和登录页已通过 HTTP 检查，/login 返回 200。由于根路径会进入登录保护，最终地址显示为 /login，符合当前认证设计。",
         "未登录访问受保护页面和部分接口时会被中间件导向登录页，POST 体系化接口返回 307。该结果说明线上部署已经启用认证保护。",
-        "测试账号已经用于真实登录尝试。表单填写正确，页面能把错误展示出来；失败点不是前端页面打不开，而是服务端认证请求返回 fetch failed。",
+        "测试账号已经用于真实登录和端到端页面操作。登录后进入工作台，新增测试素材后在素材页能看到同名记录。",
+        "知识体系页能展示已生成的人工智能主题树，点击 AI 定义节点后能查看知识内容、相关节点和来源素材。",
+        "问答页能基于当前账号的素材返回回答，并显示引用来源数量；设置页能看到模型选择、API 配置、导出和隐私说明。",
         "GitHub 仓库页面可访问，最终提交已经推送到 main 分支；StarUML 图表由 MCP 生成后导出为真实 PNG。"
     ]:
         base.bullet(doc, item)
     base.heading(doc, "3.3 登录态实测结论", 2)
     base.callout(
         doc,
-        "登录链路当前阻塞",
-        "使用测试账号提交登录后，线上页面返回 fetch failed。本地直接请求 Supabase Auth 也出现 SSL 连接失败，说明需要优先检查 Vercel 与 Supabase 的网络连通性、Supabase URL/anon key 配置，以及部署环境中 Node fetch 到 Supabase 的 TLS 行为。在这个问题修复前，报告不伪造工作台、素材页、知识页和问答页的登录态截图。",
-        "info",
+        "登录链路已修复",
+        "使用测试账号提交登录后，线上页面已经进入 /workspace。修复方式是在登录页保留浏览器端 Supabase 登录，同时新增 /auth/password-login 服务端兜底路径，解决浏览器端 fetch 失败时无法建立会话的问题。",
+        "success",
     )
     for item in [
-        "素材入库、AI 解析、一键体系化、知识问答和导出功能的代码路径均已进入构建，但这些页面需要登录态才能继续做端到端验收。",
-        "这次补充的真实测试至少确认了两个事实：第一，登录页和表单本身存在；第二，当前阻塞发生在认证服务请求，而不是页面路由或按钮缺失。",
-        "后续修复应从 Supabase Auth 连通性开始。登录打通后，再按“新增素材—解析—体系化—问答—导出”的顺序补一轮完整截图。"
+        "素材入库已经通过线上页面验证：测试脚本在工作台新增素材，随后在素材页看到同名记录和待解析状态。",
+        "知识体系展示已经通过线上页面验证：主题树、知识节点详情、相关节点和来源素材均可见。",
+        "AI 深度处理能力依赖外部模型 Key。当前报告记录为入口和代码路径完成，稳定运行仍需要保持生产环境 Key 可用。"
     ]:
         base.para(doc, item)
     base.heading(doc, "4.非功能测试", 1)
@@ -943,9 +955,9 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         if route.startswith("/api"):
             base.para(doc, "接口类验证要看三件事：未登录时是否拒绝访问，登录后是否只处理当前用户数据，异常时是否返回可读错误。课程验收时可以用浏览器网络面板或 curl 记录请求结果。")
         elif route == "/login":
-            base.para(doc, "本次已经对线上登录页完成截图和表单提交。页面能打开，字段能填写，提交后返回 fetch failed；该错误被记录为认证链路问题。")
+            base.para(doc, "本次已经对线上登录页完成截图和表单提交。页面能打开，字段能填写，提交后进入工作台，说明认证会话已经建立。")
         else:
-            base.para(doc, "页面类验证需要在登录成功后继续补充。当前因为认证链路阻塞，没有伪造这些页面的登录态截图。")
+            base.para(doc, "页面类验证已经通过测试账号补充截图。工作台、素材页、知识体系页、问答页和设置页均来自线上真实操作。")
         base.bullet(doc, "预期表现：页面或接口按权限返回结果；异常时给出明确提示。")
         base.bullet(doc, "证据形式：页面截图、HTTP 状态、命令日志或数据库记录。")
     base.heading(doc, "8.GitHub 与 Vercel 部署验证", 1)
@@ -971,12 +983,17 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         base.bullet(doc, "通过标准：仓库可访问，构建通过，线上页面可打开，关键配置已说明。")
     base.heading(doc, "8.7 真实截图证据", 2)
     screenshot_specs = [
-        ("github_repo", "图 21 GitHub 仓库真实页面截图"),
-        ("vercel_home", "图 22 Vercel 线上首页真实截图"),
-        ("vercel_login", "图 23 Vercel 登录页真实截图"),
-        ("real_01_login_before", "图 24 线上登录页真实截图"),
-        ("real_01_login_filled", "图 25 测试账号填写截图"),
-        ("real_02_login_result", "图 26 测试账号提交后错误截图"),
+        ("github_repo", "图 31 GitHub 仓库真实页面截图"),
+        ("vercel_home", "图 32 Vercel 线上首页真实截图"),
+        ("vercel_login", "图 33 Vercel 登录页真实截图"),
+        ("real_01_login_before", "图 34 线上登录页真实截图"),
+        ("real_01_login_filled", "图 35 测试账号填写截图"),
+        ("real_02_login_result", "图 36 登录后进入工作台截图"),
+        ("real_05_workspace_after_add", "图 37 新增素材后的工作台截图"),
+        ("real_06_materials_page", "图 38 素材页真实列表截图"),
+        ("real_10_knowledge_node_detail", "图 39 知识节点详情真实截图"),
+        ("real_13_qa_after_question", "图 40 问答结果真实截图"),
+        ("real_14_settings_page", "图 41 设置页真实截图"),
     ]
     inserted = False
     for key, caption in screenshot_specs:
@@ -985,7 +1002,7 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
             inserted = True
     staruml_keys = sorted(key for key in fig if key.startswith("staruml_"))
     for idx, key in enumerate(staruml_keys, 1):
-        base.add_pic(doc, fig[key], f"图 {26 + idx} StarUML 图表真实截图 {idx}", 15.7)
+        base.add_pic(doc, fig[key], f"图 {41 + idx} StarUML 图表真实截图 {idx}", 15.7)
         inserted = True
     if not inserted:
         base.para(doc, "当前未检测到可嵌入的页面截图文件。生成正式终稿前，应先运行页面截图流程，并将截图保存到 docs/evidence/screenshots 目录。")
@@ -999,8 +1016,9 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         ["StarUML ER 图", "StarUML 当前项目", "证明数据库关系图由 StarUML 绘制。"],
         ["GitHub 仓库截图", "usedare/ordknow", "代码已上传到指定仓库。"],
         ["Vercel 线上截图", "ordknow.vercel.app", "项目已部署并可访问。"],
-        ["测试账号登录截图", "Chrome CDP 自动化", "证明 test@ordknow.com 表单提交后线上返回 fetch failed。"],
-        ["登录阻塞截图", "ordknow.vercel.app/login", "证明当前登录态流程卡在认证服务请求，未伪造后续页面。"],
+        ["测试账号登录截图", "Chrome CDP 自动化", "证明测试账号提交后进入 /workspace。"],
+        ["登录态业务截图组", "ordknow.vercel.app", "证明工作台、素材页、知识体系、问答和设置页均已真实访问。"],
+        ["知识问答截图", "Chrome CDP 自动化", "证明问答结果引用当前账号素材来源。"],
     ], [3.8, 4.6, 7.0], caption="表 19 截图证据索引表", trailing_space=False)
     acceptance_appendix(doc)
 
@@ -1050,7 +1068,18 @@ def make_figures() -> dict[str, Path]:
         "real_01_login_before": "real_01_login_before.png",
         "real_01_login_filled": "real_01_login_filled.png",
         "real_02_login_result": "real_02_login_result.png",
-        "real_error": "real_error.png",
+        "real_03_workspace_initial": "real_03_workspace_initial.png",
+        "real_04_workspace_filled_material": "real_04_workspace_filled_material.png",
+        "real_05_workspace_after_add": "real_05_workspace_after_add.png",
+        "real_06_materials_page": "real_06_materials_page.png",
+        "real_07_material_detail": "real_07_material_detail.png",
+        "real_08_materials_after_analyze_click": "real_08_materials_after_analyze_click.png",
+        "real_09_knowledge_page": "real_09_knowledge_page.png",
+        "real_10_knowledge_node_detail": "real_10_knowledge_node_detail.png",
+        "real_11_knowledge_graph": "real_11_knowledge_graph.png",
+        "real_12_qa_empty": "real_12_qa_empty.png",
+        "real_13_qa_after_question": "real_13_qa_after_question.png",
+        "real_14_settings_page": "real_14_settings_page.png",
     }
     for key, filename in screenshot_files.items():
         path = screenshots / filename

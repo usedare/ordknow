@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { SearchDialog } from "@/components/ui/search-dialog";
 import { getAIRequestHeaders } from "@/lib/client-ai-config";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { Search } from "lucide-react";
 
 /**
@@ -37,21 +38,33 @@ export default function WorkspacePage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const fetchMaterials = useCallback(async () => {
-    // 拉取当前用户的全部原始素材，页面筛选和选择都在前端完成。
-    const res = await fetch("/api/materials");
-    if (res.ok) {
-      const data = await res.json();
-      setMaterials(data);
+    try {
+      // 拉取当前用户的全部原始素材，页面筛选和选择都在前端完成。
+      const res = await fetchWithTimeout("/api/materials");
+      if (res.ok) {
+        const data = await res.json();
+        setMaterials(data);
+      } else {
+        toast("素材列表加载失败", "error");
+      }
+    } catch {
+      toast("素材列表加载超时，请稍后重试", "error");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   const fetchKnowledge = useCallback(async () => {
-    // 拉取 AI 已经生成的主题树；如果还没体系化，这里通常是空数组。
-    const res = await fetch("/api/knowledge");
-    if (res.ok) {
-      const data = await res.json();
-      setTopics(data);
+    try {
+      // 拉取 AI 已经生成的主题树；如果还没体系化，这里通常是空数组。
+      const res = await fetchWithTimeout("/api/knowledge");
+      if (res.ok) {
+        const data = await res.json();
+        setTopics(data);
+      }
+    } catch {
+      // 知识树是工作台右侧辅助视图，加载失败不应阻断素材录入。
+      setTopics([]);
     }
   }, []);
 
@@ -62,17 +75,21 @@ export default function WorkspacePage() {
 
   const handleSelectMaterial = async (material: Material) => {
     setSelectedMaterial(material);
-    const res = await fetch(`/api/materials/${material.id}`);
-    if (res.ok) {
-      const data = await res.json();
-      setAnalysis(data.analysis);
+    try {
+      const res = await fetchWithTimeout(`/api/materials/${material.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalysis(data.analysis);
+      }
+    } catch {
+      toast("素材详情加载超时", "error");
     }
   };
 
   const handleCreateMaterial = async (title: string, content: string) => {
     setIsCreating(true);
     try {
-      const res = await fetch("/api/materials", {
+      const res = await fetchWithTimeout("/api/materials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, raw_content: content }),
@@ -91,7 +108,7 @@ export default function WorkspacePage() {
 
   const handleUpdateMaterial = async (id: string, title: string, content: string) => {
     try {
-      const res = await fetch(`/api/materials/${id}`, {
+      const res = await fetchWithTimeout(`/api/materials/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, raw_content: content }),
@@ -109,7 +126,7 @@ export default function WorkspacePage() {
 
   const handleDeleteMaterial = async (id: string) => {
     try {
-      const res = await fetch(`/api/materials/${id}`, { method: "DELETE" });
+      const res = await fetchWithTimeout(`/api/materials/${id}`, { method: "DELETE" });
       if (res.ok) {
         setMaterials((prev) => prev.filter((m) => m.id !== id));
         if (selectedMaterial?.id === id) {
@@ -128,11 +145,11 @@ export default function WorkspacePage() {
     try {
       // 分析只处理单条素材，完成后素材状态会从 pending 变成 analyzed。
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
-      const res = await fetch("/api/analyze", {
+      const res = await fetchWithTimeout("/api/analyze", {
         method: "POST",
         headers: getAIRequestHeaders(),
         body: JSON.stringify({ material_id: id, model }),
-      });
+      }, 60000);
       if (res.ok) {
         await fetchMaterials();
         if (selectedMaterial?.id === id) await handleSelectMaterial(selectedMaterial);
@@ -151,11 +168,11 @@ export default function WorkspacePage() {
     try {
       // 体系化会读取所有 analyzed 素材，重建整套知识体系。
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
-      const res = await fetch("/api/systematize", {
+      const res = await fetchWithTimeout("/api/systematize", {
         method: "POST",
         headers: getAIRequestHeaders(),
         body: JSON.stringify({ model }),
-      });
+      }, 120000);
       if (res.ok) {
         await fetchKnowledge();
         toast("知识体系生成完成！", "success");
