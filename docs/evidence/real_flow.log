@@ -1,0 +1,11 @@
+[2026-06-16T03:03:09.445Z] Base URL: https://ordknow.vercel.app
+[2026-06-16T03:03:09.447Z] Chrome PID: 38756
+[2026-06-16T03:03:13.078Z] 打开登录页: https://ordknow.vercel.app/login -> frame=38F77363CD7536E4723FEB06B950CD66 url=https://ordknow.vercel.app/login
+[2026-06-16T03:03:13.774Z] 登录前页面截图: D:\OrdKnow\docs\evidence\screenshots\real_01_login_before.png
+[2026-06-16T03:03:14.472Z] 登录表单填写后截图: D:\OrdKnow\docs\evidence\screenshots\real_01_login_filled.png
+[2026-06-16T03:03:14.488Z] 登录提交后 URL: https://ordknow.vercel.app/login
+[2026-06-16T03:03:16.452Z] 登录结果截图: D:\OrdKnow\docs\evidence\screenshots\real_02_login_result.png
+[2026-06-16T03:03:16.461Z] 登录未进入工作台，页面文本摘要: 序知 输入无序碎片，输出终身知识体系 fetch failed 登录 登录 或 注册新账号 注册
+[2026-06-16T03:03:16.461Z] 流程失败: Error: Login did not reach /workspace
+    at file:///D:/OrdKnow/tools/capture_ordknow_real_flow.mjs:243:11
+[2026-06-16T03:03:17.166Z] 错误现场截图: D:\OrdKnow\docs\evidence\screenshots\real_error.png

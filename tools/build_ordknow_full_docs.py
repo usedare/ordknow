@@ -13,8 +13,8 @@ import build_ordknow_template_docs as base
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs"
-DOCX = OUT / "序知_AI个人体系化知识库_软件工程文档合订本_最终版.docx"
-DOCX_FULL = OUT / "序知_AI个人体系化知识库_软件工程文档合订本_最终版.docx"
+DOCX = OUT / "序知_AI个人体系化知识库_软件工程文档合订本_去AI味修订版.docx"
+DOCX_FULL = OUT / "序知_AI个人体系化知识库_软件工程文档合订本_去AI味修订版.docx"
 TITLE_PAGE_COUNT = 0
 
 
@@ -160,7 +160,7 @@ def requirements_acquisition(doc: Document, fig: dict[str, Path]) -> None:
     base.heading(doc, "3.软件需求", 1)
     base.heading(doc, "3.1 功能需求", 2)
     base.table(doc, ["模块", "核心功能"], [
-        ["用户认证", "- Magic Link 登录；\n- 未登录用户跳转登录页；\n- 登录后读取当前用户会话。"],
+        ["用户认证", "- 邮箱密码登录与注册；\n- 未登录用户跳转登录页；\n- 登录后读取当前用户会话。"],
         ["素材入库", "- 支持手动输入、粘贴、OCR、音频转写、PDF/Word 解析；\n- 保留 raw_content；\n- 支持状态筛选、搜索、编辑和删除。"],
         ["AI 单条解析", "- 提取核心含义、有效信息、冗余信息、主题、知识类型、关键词和关联提示；\n- 输出结构化 JSON；\n- 失败时标记 failed。"],
         ["文本分块与向量", "- 长素材切分为 chunks；\n- 生成 embedding；\n- 使用 pgvector 支持语义检索。"],
@@ -196,7 +196,7 @@ def requirements_acquisition(doc: Document, fig: dict[str, Path]) -> None:
     base.heading(doc, "4.1 用户用例", 2)
     base.add_pic(doc, fig["usecase"], "图 1 用户用例图", 15.7)
     usecases = [
-        ("4.1.1", "用户登录", "用户", "验证用户身份并创建会话", "用户拥有邮箱并能接收 Magic Link", "用户进入主页面", ["用户打开登录页。", "用户输入邮箱并提交。", "系统发送 Magic Link。", "用户点击邮件链接完成验证。", "系统创建会话并跳转工作台。"], ["邮箱格式错误时提示重新输入。", "链接过期时要求重新发送。"], "登录是所有知识库操作的前提。"),
+        ("4.1.1", "用户登录", "用户", "验证用户身份并创建会话", "用户拥有已注册邮箱和密码", "用户进入主页面", ["用户打开登录页。", "用户输入邮箱和密码。", "用户点击登录按钮。", "系统调用 Supabase Auth 校验账号。", "系统创建会话并跳转工作台。"], ["邮箱或密码错误时提示重新输入。", "认证服务请求失败时在登录页展示错误。"], "登录是所有知识库操作的前提。"),
         ("4.1.2", "新增原始素材", "用户", "保存用户原始输入", "用户已登录", "materials 表新增 pending 记录", ["用户进入工作台。", "用户输入标题和原始内容。", "用户点击保存。", "系统写入 raw_content。", "素材列表刷新。"], ["内容为空时阻止提交。", "保存失败时提示错误。"], "原始素材是事实源，后续 AI 只基于此进行解析和重构。"),
         ("4.1.3", "编辑原始素材", "用户", "更新素材标题和原文", "素材属于当前用户", "materials 更新 updated_at", ["用户打开素材详情。", "用户修改标题或内容。", "用户点击保存。", "系统更新数据库。"], ["无权限访问时返回 401 或 404。", "内容过长时提示用户拆分。"], "编辑后可重新解析，使知识体系基于最新素材。"),
         ("4.1.4", "删除原始素材", "用户", "删除素材及相关解析数据", "素材属于当前用户", "素材和级联数据被移除", ["用户选择素材。", "用户点击删除。", "系统确认操作。", "系统删除记录。"], ["用户取消确认则不执行删除。", "已被知识节点引用时提示可能影响体系。"], "删除操作需要谨慎，因为来源引用会发生变化。"),
@@ -391,7 +391,7 @@ def design_doc(doc: Document, fig: dict[str, Path]) -> None:
     base.heading(doc, "6.代码结构说明", 1)
     code_sections = [
         ("src/app", "Next.js App Router 页面、布局和 API Routes 所在目录。页面层负责路由结构，API 层负责服务端业务逻辑。"),
-        ("src/app/(auth)/login", "登录页和 Magic Link 登录动作。该模块是用户进入系统的身份入口。"),
+        ("src/app/(auth)/login", "登录页、注册表单和邮箱密码登录动作。该模块是用户进入系统的身份入口。"),
         ("src/app/(main)/workspace", "工作台页面。三栏结构承载素材输入、素材详情和知识树浏览。"),
         ("src/app/(main)/materials", "素材管理页面。用于素材列表、搜索、状态筛选和详情查看。"),
         ("src/app/(main)/knowledge", "知识体系页面。用于展示 AI 体系化结果、节点详情和知识关系。"),
@@ -410,13 +410,19 @@ def design_doc(doc: Document, fig: dict[str, Path]) -> None:
     for idx, (path, desc) in enumerate(code_sections, 1):
         base.heading(doc, f"6.{idx} {path}", 2)
         base.para(doc, desc)
-        base.table(doc, ["说明项", "内容"], [
-            ["所属层次", "前端页面层 / 服务端接口层 / AI 能力层 / 数据持久层之一。"],
-            ["维护重点", "保持职责单一，避免把 AI 处理、数据库操作和 UI 展示混杂在同一文件中。"],
-            ["与核心目标关系", "共同服务于“原始素材入库—AI 理解—体系化重构—知识复用”的闭环。"],
-        ], [3.4, 12.0], caption=f"表 10-{idx} {path} 结构说明")
+        if path.startswith("src/app"):
+            base.para(doc, "这一层靠近路由和页面，最容易把界面逻辑、接口调用和权限判断混在一起。项目中把页面展示和服务端 API 分开写，主要是为了后续排查问题时能很快判断：问题发生在页面、接口，还是数据库。")
+        elif path.startswith("src/components"):
+            base.para(doc, "组件目录更偏向交互细节。比如素材输入、知识树、问答框这些内容，都应该让用户一眼知道自己正在处理哪一类知识数据，而不是把业务状态藏在接口返回里。")
+        elif path.startswith("src/lib"):
+            base.para(doc, "lib 目录放的是可复用能力。AI 请求、Supabase 客户端、Embedding 分块都在这里集中处理，可以避免同一套鉴权、错误处理和模型选择逻辑散落在多个页面中。")
+        else:
+            base.para(doc, "该目录更偏工程支撑，主要服务数据库迁移、文档生成和项目交付。它不直接面对用户，但会影响项目是否能被重新部署、复现和验收。")
+        base.bullet(doc, "维护重点：保持职责单一，不把 AI 处理、数据库读写和界面展示塞进同一个文件。")
+        base.bullet(doc, "和产品目标的关系：所有目录最终都围绕“原始素材入库—AI 理解—体系化重构—知识复用”这条主线工作。")
     base.heading(doc, "7.部署设计", 1)
-    base.para(doc, "项目 GitHub 仓库为 https://github.com/usedare/ordknow，线上部署地址为 https://ordknow.vercel.app。部署流程采用 GitHub 推送触发 Vercel 构建的方式，保证代码、构建产物和线上访问保持一致。")
+    base.para(doc, "项目代码放在 GitHub 仓库 https://github.com/usedare/ordknow，线上访问地址为 https://ordknow.vercel.app。部署链路采用 GitHub 推送触发 Vercel 构建的方式，实际操作比较直接：本地通过类型检查和生产构建后提交代码，Vercel 读取仓库并完成线上构建。")
+    base.para(doc, "这套部署方式的好处是交付痕迹比较清楚：代码提交、构建输出、线上页面访问都能留下证据。它的风险也很明确，主要集中在环境变量和外部服务连通性上。比如 Supabase URL、anon key、AI Provider Key 任意一项缺失，页面虽然能打开，但登录或 AI 功能会失败。")
     base.table(doc, ["部署项", "说明"], [
         ["GitHub 仓库", "https://github.com/usedare/ordknow"],
         ["Vercel 线上地址", "https://ordknow.vercel.app"],
@@ -424,7 +430,7 @@ def design_doc(doc: Document, fig: dict[str, Path]) -> None:
         ["类型检查", "npm run lint"],
         ["环境变量", "Supabase URL、Supabase anon key、AI Provider key、Embedding key 等。"],
         ["数据库迁移", "按 supabase/migrations 中 00001 至 00007 顺序执行。"],
-    ], [4.0, 11.4], caption="表 10-17 部署设计表")
+    ], [4.0, 11.4], caption="表 10-17 部署配置摘要", variant="kv")
 
 
 def detailed_design_doc(doc: Document, fig: dict[str, Path]) -> None:
@@ -471,13 +477,27 @@ def detailed_design_doc(doc: Document, fig: dict[str, Path]) -> None:
         base.heading(doc, title, 1)
         for text in paragraphs:
             base.para(doc, text)
-        base.table(doc, ["设计项", "实现说明"], [
-            ["输入", "来自前端页面、用户文件、AI 返回结果或数据库查询结果。"],
-            ["处理", "服务端 API 负责身份验证、参数校验、业务编排和错误处理。"],
-            ["输出", "返回 JSON 响应、更新数据库记录或生成导出文件。"],
-            ["风险", "AI 输出不稳定、数据库写入失败、用户权限不足、素材量过大。"],
-            ["处理策略", "结构化 Prompt、任务状态记录、RLS 隔离、素材数量限制和异常提示。"],
-        ], [3.5, 11.9], caption=f"表 {title.split('.')[0]} 详细设计说明表")
+        if title.startswith("1."):
+            base.bullet(doc, "入口尽量轻：用户只需要把内容放进来，不承担分类和排版工作。")
+            base.bullet(doc, "原文不被覆盖：raw_content 是后续解析、追溯和纠错的依据。")
+        elif title.startswith("2."):
+            base.bullet(doc, "解析结果是中间层，不直接替代原始素材。")
+            base.bullet(doc, "JSON 字段保持稳定，前端展示和数据库写入才不会因为模型表达变化而失控。")
+        elif title.startswith("3."):
+            base.bullet(doc, "全量重建适合第一版：实现简单，验收路径清楚，后续可以再升级为增量重构。")
+            base.bullet(doc, "source_material_ids 是硬要求，缺少来源的知识节点不能算真正完成。")
+        elif title.startswith("4."):
+            base.bullet(doc, "topics 解决层级，edges 解决横向关联，两者合起来才像知识网络。")
+            base.bullet(doc, "当前关系先从共同来源推断，后续再让 AI 细分前置、支撑、矛盾等关系。")
+        elif title.startswith("5."):
+            base.bullet(doc, "问答接口由服务端重新取上下文，不信任前端传入的素材列表。")
+            base.bullet(doc, "问答不是闲聊入口，回答必须回到用户已有知识库。")
+        elif title.startswith("6."):
+            base.bullet(doc, "用户 Key 只保存在浏览器 localStorage，不写入数据库。")
+            base.bullet(doc, "导出功能承担数据可迁移责任，不能只导出页面上看得到的内容。")
+        else:
+            base.bullet(doc, "异常状态必须写清楚，失败不能破坏原始素材。")
+            base.bullet(doc, "权限校验同时放在 API 和 RLS 两层，避免只靠前端控制。")
         if title.startswith("3."):
             base.add_pic(doc, fig["seq_system"], "图 11 体系化重构详细时序图", 15.7)
         if title.startswith("5."):
@@ -517,12 +537,18 @@ def detailed_design_doc(doc: Document, fig: dict[str, Path]) -> None:
     for idx, (path, desc) in enumerate(implementation_files, 1):
         base.heading(doc, f"8.{idx} {path}", 2)
         base.para(doc, desc)
-        base.table(doc, ["设计维度", "说明"], [
-            ["输入", "来自前端请求、数据库记录、用户会话或 AI 服务返回结果。"],
-            ["处理", "完成身份验证、参数检查、业务编排、数据库读写或 UI 渲染。"],
-            ["输出", "返回 JSON、更新数据库、刷新页面状态或生成用户可见内容。"],
-            ["质量要求", "代码需要保持职责清晰，错误处理明确，不破坏原始素材事实源。"],
-        ], [3.4, 12.0], caption=f"表 8-{idx} 核心实现说明")
+        if "/api/" in path:
+            base.para(doc, "实现时最关键的是先确认用户身份，再处理业务参数。这个顺序不能反过来，否则接口很容易在异常路径里泄露数据。接口返回保持 JSON 为主，下载类接口例外。")
+        elif "src/lib/ai" in path:
+            base.para(doc, "这一类文件直接影响 AI 输出质量。代码里把模型调用、Prompt 和业务接口拆开，是为了让后续换模型或调整 Prompt 时不需要重写页面。")
+        elif "src/lib/embeddings" in path:
+            base.para(doc, "Embedding 相关代码属于检索基础能力。即使当前页面展示还比较轻，分块和向量字段也为后续语义搜索、相似素材推荐、知识关联打下了基础。")
+        elif "src/components" in path:
+            base.para(doc, "组件实现更接近用户实际体验。这里的重点不是炫技，而是让用户能稳定完成输入、查看、提问、导出这些动作。")
+        else:
+            base.para(doc, "该文件承担基础支撑作用。它不一定直接产生页面，但会影响类型边界、权限入口或项目整体可维护性。")
+        base.bullet(doc, "质量要求：职责清楚、错误处理明确、不破坏原始素材事实源。")
+        base.bullet(doc, "验收方式：结合源码检查、构建输出、接口访问和页面截图共同判断。")
     base.heading(doc, "9.AI Prompt 设计", 1)
     prompt_rules = [
         "你是“序知”的知识解析引擎，不是聊天助手。",
@@ -557,6 +583,208 @@ def detailed_design_doc(doc: Document, fig: dict[str, Path]) -> None:
     for table_name, rule, meaning in rls_rows:
         base.heading(doc, f"10.{rls_rows.index([table_name, rule, meaning]) + 1} {table_name} 权限设计", 2)
         base.para(doc, f"{table_name} 表的权限策略核心是“{rule}”。该策略的意义是：{meaning} 在服务端接口中，系统还会显式按 user_id 查询，形成应用层和数据库层的双重保护。")
+
+
+def acceptance_appendix(doc: Document) -> None:
+    groups = [
+        (
+            "10.1 登录与认证链路复测记录",
+            [
+                "这次拿到测试账号后，第一件事不是直接补工作台截图，而是先验证登录链路。原因很简单：序知所有业务页面都在登录态后面，如果认证没有打通，后面素材、知识、问答的截图都不可信。",
+                "实际结果比较明确。登录页可以访问，邮箱和密码字段可以填写，按钮也能提交；提交后页面没有跳到 /workspace，而是在登录页展示 fetch failed。这个现象说明前端页面基本存在，阻塞点在服务端认证请求或 Supabase 连通性。",
+            ],
+            [
+                "保留登录前截图，证明线上入口可访问。",
+                "保留账号填写截图，证明测试账号确实进入了表单。",
+                "保留错误结果截图，证明没有绕过失败点。",
+                "复测时先看 Vercel 环境变量，再看 Supabase Auth 请求日志。",
+                "登录打通后，第一张补图应是 /workspace 的登录态首页。",
+            ],
+        ),
+        (
+            "10.2 原始素材入库复测记录",
+            [
+                "素材入库是序知的第一步，也是最容易被误解的一步。这里不要求用户整理，也不要求用户把内容写得漂亮。只要内容能作为个人知识库的事实来源，就应该先进入 materials 表。",
+                "当前代码路径已经具备标题、正文、来源类型和状态字段。前端素材输入框也支持文本、图片、文件、音频和网页入口。因为登录态没有打通，这次没有把测试素材真正写入线上数据库，报告中也没有把它写成已通过。",
+            ],
+            [
+                "复测素材标题可使用“软件工程报告真实测试素材”。",
+                "素材正文应故意保留几条碎片，符合产品定位。",
+                "提交后检查列表是否出现 pending 状态。",
+                "再刷新页面，确认数据不是只停留在前端状态。",
+                "最后打开详情页，确认 raw_content 与输入一致。",
+            ],
+        ),
+        (
+            "10.3 AI 单条解析复测记录",
+            [
+                "解析功能不应该被写成“AI 帮用户润色”。它的职责更窄：读懂单条素材，把核心含义、有效信息、冗余信息、主题、关键词和知识类型提取出来，作为体系化重构的中间层。",
+                "这一段复测需要两个前提：素材已经成功入库，AI Provider Key 能被服务端拿到。缺少其中任何一个，解析按钮即使存在，也只能验证到 UI 入口，不能算业务闭环完成。",
+            ],
+            [
+                "点击解析前记录素材状态。",
+                "点击后观察状态是否进入 analyzing。",
+                "成功后检查 material_analysis 是否有完整字段。",
+                "故意清空 Key 时应返回明确错误，而不是页面卡死。",
+                "解析失败后原始素材仍应保留。",
+            ],
+        ),
+        (
+            "10.4 文本分块与向量检索复测记录",
+            [
+                "分块和向量不是用户每天都会直接看到的功能，但它决定了后续问答和知识关联能不能做深。长素材如果整段塞给模型，成本高，也容易丢重点；切成 chunk 后再做向量，检索才有空间。",
+                "这部分验收不一定需要复杂界面。更稳的方式是准备一段长文本，触发解析后检查 material_chunks 表，看 chunk_index、content、embedding 是否按预期生成。",
+            ],
+            [
+                "准备一条超过普通摘要长度的长素材。",
+                "解析后检查 chunks 数量是否大于 1。",
+                "检查 chunk 顺序是否稳定。",
+                "Embedding 服务失败时，素材解析不应整体损坏。",
+                "后续搜索功能应优先复用这些分块结果。",
+            ],
+        ),
+        (
+            "10.5 一键体系化复测记录",
+            [
+                "一键体系化是序知最核心的验收点。它不是把素材简单列出来，而是要重新排序、分层、合并重复内容，再写入主题、节点、来源引用和版本快照。",
+                "这一步必须等至少几条素材解析成功后再测。只有一条素材也能生成节点，但很难看出“体系化”的价值。更好的测试数据是三到五条同主题但顺序混乱的素材。",
+            ],
+            [
+                "准备几条同类碎片素材，例如 AI 知识库、检索、知识网络。",
+                "确认这些素材状态为 analyzed。",
+                "点击一键体系化后观察任务状态。",
+                "检查 topics、nodes、node_material_links 是否同时写入。",
+                "确认每个节点能追溯到 source_material_ids。",
+            ],
+        ),
+        (
+            "10.6 知识网络与关联关系复测记录",
+            [
+                "如果只有主题树，序知会接近普通目录软件。知识网络的意义在于，散落在不同时间的素材可以因为共同来源、前置依赖或相互补充而连起来。",
+                "当前实现中，related 关系主要来自共同来源素材。这个策略不复杂，但足够支撑第一版验收：同一条素材支撑多个节点时，节点之间确实存在天然联系。",
+            ],
+            [
+                "找一条同时支撑多个知识节点的素材。",
+                "体系化后检查 knowledge_edges 是否生成 related 边。",
+                "在节点详情页查看相关节点。",
+                "确认关系只出现在当前用户数据中。",
+                "后续可扩展 prerequisite、supports、contradicts 等类型。",
+            ],
+        ),
+        (
+            "10.7 知识问答复测记录",
+            [
+                "知识问答页的验收重点不是模型回答得多漂亮，而是它有没有使用用户自己的知识库。一个看起来流畅但完全脱离素材的回答，对序知来说反而是不合格的。",
+                "登录修复后，可以先提一个简单问题：知识库里目前有哪些主要主题？如果系统能引用已有素材或节点数量，说明上下文组织路径基本打通。",
+            ],
+            [
+                "先在知识库里准备两到三个主题。",
+                "打开问答页输入问题。",
+                "观察回答是否出现与素材一致的主题词。",
+                "检查 sources 数量是否合理。",
+                "勾选保存到知识库时，应产生新的回存素材或记录。",
+            ],
+        ),
+        (
+            "10.8 导出与数据可迁移复测记录",
+            [
+                "导出功能看起来像附加功能，但对个人知识库很重要。用户把长期知识放进系统后，必须能把数据带走，否则这个产品会让人不放心。",
+                "JSON 导出适合备份和迁移，Markdown 导出适合阅读和提交。两个格式的验收重点不同：JSON 看完整性，Markdown 看结构和可读性。",
+            ],
+            [
+                "JSON 文件应包含素材、解析、主题、节点、关系和版本。",
+                "Markdown 文件应保留主题层级。",
+                "节点内容下方应能看到来源信息。",
+                "没有知识体系时，导出也应给出合理空结果。",
+                "下载文件名应带日期，便于归档。",
+            ],
+        ),
+        (
+            "10.9 设置页与用户 Key 复测记录",
+            [
+                "设置页不应该做得很花，但它必须讲清楚 AI 服务和用户数据的关系。用户 Key 保存在浏览器 localStorage 中，服务端只在请求时临时使用，这是当前实现的边界。",
+                "复测时可以切换模型，保存后刷新页面，确认选择仍然存在。再触发一次解析或问答，看请求是否按当前模型配置发送。",
+            ],
+            [
+                "检查 DeepSeek、MiMo、SiliconFlow Key 输入框。",
+                "切换模型后点击保存配置。",
+                "刷新页面确认配置仍在当前浏览器中。",
+                "隐私说明应明确素材会发送到所选 AI 服务。",
+                "不要把用户 Key 写入数据库或文档截图。",
+            ],
+        ),
+        (
+            "10.10 异常场景复测记录",
+            [
+                "异常场景在课程项目里经常被一笔带过，但序知这种 AI 应用不能只测顺风流程。模型失败、JSON 解析失败、数据库写入失败、素材为空、未登录访问都应该有明确行为。",
+                "这次已经真实遇到了认证链路失败，所以文档没有把它藏起来。后续继续验收时，也应保持这种口径：失败就是失败，写清楚失败点和下一步处理。"
+            ],
+            [
+                "空素材不能提交。",
+                "AI Key 错误时不应覆盖原始素材。",
+                "体系化无素材时应返回可读提示。",
+                "未登录 API 请求不能返回业务数据。",
+                "网络错误应在页面上给出用户能理解的提示。",
+            ],
+        ),
+        (
+            "10.11 页面截图补充计划",
+            [
+                "当前文档已经包含线上登录页、账号填写、登录失败、GitHub、Vercel、StarUML、lint、build 和 HTTP 检查截图。缺少的是登录成功后的业务页面截图。",
+                "这些截图不能靠静态页面或假数据拼出来。登录修复后，应按真实操作补齐工作台、素材页、知识体系页、问答页、设置页，并保留每张图对应的操作说明。",
+            ],
+            [
+                "第一张补工作台，证明登录态进入主界面。",
+                "第二张补新增素材后状态。",
+                "第三张补解析结果或解析失败提示。",
+                "第四张补知识树和节点详情。",
+                "第五张补问答提交后的回答或错误。",
+            ],
+        ),
+        (
+            "10.12 当前版本结论",
+            [
+                "从工程角度看，序知的代码结构、数据库迁移、AI 处理路径、知识网络数据表和部署入口都已经搭起来了。lint 和 build 能通过，说明项目至少具备继续联调的基础。",
+                "从产品验收角度看，当前最大的阻塞是认证链路。它不影响“代码是否存在”的判断，但会影响“真实用户是否能完成闭环”。所以最终结论应写得克制：工程主体完成，线上登录链路待修复，登录后业务闭环需要再跑一次完整验收。",
+            ],
+            [
+                "已完成：代码、数据库结构、构建、部署入口、图表和报告主体。",
+                "已发现：测试账号登录返回 fetch failed。",
+                "未伪造：登录态业务页面截图。",
+                "下一步：修复 Supabase Auth 连通性。",
+                "复测顺序：登录、入库、解析、体系化、问答、导出。",
+            ],
+        ),
+    ]
+
+    base.heading(doc, "10.补充验收记录", 1)
+    base.para(doc, "以下内容是对测试章节的补充。它不再用密集表格列满页面，而是按真实验收顺序说明每一步该看什么、这次实际看到什么、后续怎么补测。")
+    labels = ["复测要点", "现场记录口径", "验收时重点看", "后续补测动作"]
+    conclusions = [
+        "本项的判断口径很朴素：能进入工作台才算登录链路通过；只看到登录页或错误提示，只能证明入口存在。当前截图已经能说明问题发生在认证请求阶段，后续修复时不要先改业务页面。",
+        "素材入库复测时不要急着点解析。先确认新增内容是否真的落库，再确认刷新后是否仍在列表中。很多前端问题会在刷新后暴露出来。",
+        "解析结果最好直接和原文对照。只要解析中出现原文没有的信息，就应记录为 Prompt 约束不足，而不是把它当成模型能力强。",
+        "向量检索的验收可以先从数据库侧做，不必一开始就追求漂亮图谱。只要 chunk 和 embedding 稳定生成，后续搜索和问答就有继续优化的基础。",
+        "体系化复测不要只看页面有没有树。更重要的是看节点是否有来源、版本是否保存、失败时任务状态是否清楚。",
+        "知识关系的第一版不必追求复杂，但至少要能解释关系从哪里来。如果关系来源说不清，后续图谱会变成装饰。",
+        "问答复测时应准备一个只有知识库能回答的问题。这样能区分系统是在读用户材料，还是只是在给出通用回答。",
+        "导出功能的检查要打开下载文件看内容。只点按钮并不能证明导出成功，更不能证明数据完整。",
+        "设置页复测时要避免把真实 API Key 截进报告。截图可以展示输入框和模型选项，但密钥内容必须留空或遮蔽。",
+        "异常测试的价值在于暴露边界。当前登录失败就是一个真实边界，应该写进报告，而不是绕过去。",
+        "截图补充计划不是装饰清单。每张图都应该对应一个验收结论，否则图片再多也只是堆材料。",
+        "当前版本的结论不宜写得过满。它已经具备工程主体，但线上闭环还被认证链路卡住。这个判断比空泛地写“系统运行良好”更可信。",
+    ]
+    for idx, (title, paragraphs, bullets) in enumerate(groups):
+        doc.add_page_break()
+        base.heading(doc, title, 2)
+        for text in paragraphs:
+            base.para(doc, text)
+        base.bullet(doc, labels[idx % len(labels)])
+        for bullet in bullets:
+            base.bullet(doc, bullet, indent=1)
+        base.para(doc, conclusions[idx])
+        if idx in {0, 4, 9, 11}:
+            base.callout(doc, "记录结论", conclusions[idx], "plain")
 
 
 def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
@@ -596,93 +824,21 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
     base.callout(
         doc,
         "测试口径说明",
-        "本次报告只把能够由命令、HTTP 响应、GitHub 页面、Vercel 页面和 StarUML 导出文件证明的项目标为“通过”。需要登录态、真实测试账号、邮箱 Magic Link、Supabase 数据和 AI Key 才能完整执行的业务闭环，不写成已经通过，而标记为“待登录账号实测”或“代码路径已覆盖”。",
+        "本次测试使用 test@ordknow.com / test123456 作为登录账号。报告只把有命令输出、页面截图或 HTTP 响应支撑的内容写成通过；实际跑不通的地方按真实结果记录。本次登录表单能够正常打开和提交，但线上服务端认证返回 fetch failed，因此没有伪造工作台、素材页、知识页的登录态截图。",
         "warn",
     )
     base.heading(doc, "3.功能测试", 1)
-    rows = []
-    tests = [
-        ("TC-01", "登录页面", "访问 /login，输入邮箱", "能够发送 Magic Link"),
-        ("TC-02", "路由保护", "未登录访问 /workspace", "跳转登录页"),
-        ("TC-03", "新增素材", "输入标题和内容并保存", "列表出现 pending 素材"),
-        ("TC-04", "编辑素材", "修改素材内容并保存", "updated_at 更新"),
-        ("TC-05", "删除素材", "点击删除并确认", "素材从列表消失"),
-        ("TC-06", "状态筛选", "选择 analyzed 状态", "仅展示已解析素材"),
-        ("TC-07", "AI 解析", "对素材触发解析", "生成解析结果"),
-        ("TC-08", "解析失败", "模拟 AI Key 错误", "状态变为 failed"),
-        ("TC-09", "文件解析", "上传 PDF/Word", "抽取文本"),
-        ("TC-10", "OCR", "上传图片", "返回识别文本"),
-        ("TC-11", "音频转写", "上传音频", "返回转写文本"),
-        ("TC-12", "一键体系化", "点击体系化按钮", "生成知识树"),
-        ("TC-13", "无素材体系化", "无 analyzed 素材时触发", "返回提示"),
-        ("TC-14", "知识节点详情", "点击节点", "显示内容和来源"),
-        ("TC-15", "相关节点", "查看节点关系", "显示 related 节点"),
-        ("TC-16", "版本列表", "打开历史记录", "显示版本号"),
-        ("TC-17", "版本差异", "选择两个版本", "显示差异信息"),
-        ("TC-18", "知识问答", "输入问题", "返回回答"),
-        ("TC-19", "知识搜索", "输入关键词", "返回相关素材/节点"),
-        ("TC-20", "JSON 导出", "点击导出 JSON", "下载数据文件"),
-        ("TC-21", "Markdown 导出", "点击导出 Markdown", "下载 Markdown"),
-        ("TC-22", "模型选择", "切换模型", "选择被保存"),
-        ("TC-23", "API Key 配置", "输入用户 Key", "后续请求携带配置"),
-        ("TC-24", "类型检查", "执行 npm run lint", "命令通过"),
-        ("TC-25", "生产构建", "执行 npm run build", "构建通过"),
-        ("TC-26", "登录失败处理", "输入无效邮箱或过期链接", "系统提示重新登录"),
-        ("TC-27", "素材空内容校验", "提交空素材", "前端或接口拒绝提交"),
-        ("TC-28", "长文本素材", "输入较长课程笔记", "系统正常保存并可分块"),
-        ("TC-29", "粘贴资料入库", "粘贴网页资料", "source_type 可记录为 paste"),
-        ("TC-30", "OCR 低质量图片", "上传模糊图片", "系统返回失败或可编辑文本"),
-        ("TC-31", "文档格式错误", "上传不支持文件", "系统提示格式不支持"),
-        ("TC-32", "AI Key 缺失", "清空模型 Key 后解析", "系统返回配置提示"),
-        ("TC-33", "Embedding 失败", "模拟向量服务不可用", "素材解析流程不被整体阻断"),
-        ("TC-34", "体系化素材上限", "准备超过 100 条素材", "系统按限制处理前 100 条"),
-        ("TC-35", "节点来源引用", "打开知识节点详情", "显示来源素材列表"),
-        ("TC-36", "节点重新生成", "点击节点重生成", "节点内容更新或返回错误提示"),
-        ("TC-37", "知识健康检查", "访问健康检查入口", "显示重复/孤儿/无来源检查结果"),
-        ("TC-38", "知识关系接口", "请求 edges/all", "返回当前用户节点关系"),
-        ("TC-39", "搜索无结果", "输入不存在关键词", "显示空状态"),
-        ("TC-40", "Markdown 导出内容", "导出 Markdown", "包含主题、节点和来源信息"),
-        ("TC-41", "JSON 导出完整性", "导出 JSON", "包含素材、解析、节点、关系、版本"),
-        ("TC-42", "设置模型切换", "切换不同模型", "前端保存选择并用于请求"),
-        ("TC-43", "隐私说明展示", "打开设置页", "显示数据和 AI 调用说明"),
-        ("TC-44", "未登录 API", "直接请求业务接口", "返回 Unauthorized"),
-        ("TC-45", "跨用户数据隔离", "尝试访问他人 id", "接口不返回数据"),
-        ("TC-46", "RLS 策略", "数据库层按 auth.uid 查询", "只能访问本人数据"),
-        ("TC-47", "Vercel 首页访问", "打开 https://ordknow.vercel.app", "页面可访问"),
-        ("TC-48", "Vercel 登录页访问", "打开 /login", "登录页正常显示"),
-        ("TC-49", "GitHub 仓库", "访问 usedare/ordknow", "仓库存在且包含最新代码"),
-        ("TC-50", "部署环境变量", "检查 Vercel 环境变量", "关键变量已配置"),
-        ("TC-51", "数据库迁移顺序", "检查 migrations 文件", "00001 至 00007 顺序完整"),
-        ("TC-52", "构建路由数量", "查看 build 输出", "包含主要页面和 API 路由"),
-        ("TC-53", "移动宽度显示", "缩窄浏览器宽度", "页面不发生严重重叠"),
-        ("TC-54", "按钮交互反馈", "点击保存、解析、导出按钮", "有 loading 或结果提示"),
-        ("TC-55", "错误提示可读性", "模拟接口失败", "前端提示清楚"),
-        ("TC-56", "数据删除级联", "删除素材", "相关解析和分块被清理"),
-        ("TC-57", "版本号递增", "连续体系化两次", "version_number 递增"),
-        ("TC-58", "共同来源建边", "同素材生成多个节点", "节点间生成 related 边"),
-        ("TC-59", "用户退出", "退出登录", "返回登录页"),
-        ("TC-60", "文档交付检查", "打开 DOCX/PDF", "页码、图表、表格正常"),
-    ]
-    status_map = {
-        "TC-01": "部分通过：页面可访问；邮件链路待账号",
-        "TC-02": "通过：未登录跳转登录页",
-        "TC-24": "通过：lint 证据",
-        "TC-25": "通过：build 证据",
-        "TC-44": "通过：未登录保护",
-        "TC-47": "通过：线上 200",
-        "TC-48": "通过：线上 200",
-        "TC-49": "通过：仓库可访问",
-        "TC-51": "通过：迁移文件存在",
-        "TC-52": "通过：27 路由",
-        "TC-60": "通过：PDF 100 页",
-    }
-    code_covered = {"TC-26", "TC-27", "TC-28", "TC-29", "TC-31", "TC-32", "TC-33", "TC-34", "TC-38", "TC-39", "TC-40", "TC-41", "TC-42", "TC-43", "TC-45", "TC-46", "TC-50", "TC-53", "TC-54", "TC-55", "TC-56", "TC-57", "TC-58", "TC-59"}
-    for tid, name, op, expect in tests:
-        status = status_map.get(tid)
-        if status is None:
-            status = "代码路径已覆盖，待登录账号实测" if tid in code_covered else "待登录账号/API Key 实测"
-        rows.append([tid, name, op, expect, status])
-    base.table(doc, ["编号", "测试项", "操作步骤", "预期结果", "执行状态"], rows, [1.5, 2.3, 4.3, 3.9, 3.4], caption="表 12 功能测试用例矩阵")
+    base.para(doc, "测试没有继续堆 60 行同款表格。实际验收按三条线走：第一条是工程线，检查 lint、build、GitHub 和 Vercel；第二条是访问线，检查公开页面和未登录保护；第三条是账号线，用测试账号提交登录表单，观察真实错误。这样写虽然不如“全绿”好看，但更接近本项目当前状态。")
+    base.table(doc, ["编号", "测试对象", "实际操作", "结果"], [
+        ["TC-01", "登录页访问", "打开 https://ordknow.vercel.app/login", "页面正常显示，截图已保存。"],
+        ["TC-02", "登录表单填写", "使用 test@ordknow.com / test123456 填写登录表单", "字段填写正确，提交后没有进入工作台。"],
+        ["TC-03", "登录失败反馈", "点击登录按钮后等待跳转", "页面显示 fetch failed，说明服务端认证请求失败。"],
+        ["TC-04", "未登录路由保护", "直接访问 /workspace、/materials、/api/materials、/api/knowledge", "最终回到 /login 或返回受保护状态。"],
+        ["TC-05", "类型检查", "执行 npm run lint", "通过。"],
+        ["TC-06", "生产构建", "执行 npm run build", "通过，构建输出包含主要页面和 API 路由。"],
+        ["TC-07", "GitHub 仓库", "访问 usedare/ordknow", "仓库可访问，最终代码和文档已推送。"],
+        ["TC-08", "StarUML 图表", "通过 StarUML MCP 生成并导出图表", "6 张 UML/ER 图已嵌入报告。"],
+    ], [1.6, 3.0, 5.3, 5.5], caption="表 12 实际执行测试记录", variant="test")
     base.heading(doc, "3.1 测试执行记录", 2)
     base.table(doc, ["证据编号", "实测对象", "执行方式", "实际结果"], [
         ["E-01", "TypeScript 类型检查", "本地执行 npm run lint", "通过，输出已保存到 docs/evidence/lint.log。"],
@@ -690,30 +846,40 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         ["E-03", "线上入口", "HTTP GET https://ordknow.vercel.app/login", "返回 200，登录页可访问。"],
         ["E-04", "未登录保护", "HTTP 访问 /workspace、/materials、/api/materials、/api/knowledge", "最终跳转到 /login；POST 体系化接口返回 307。"],
         ["E-05", "GitHub 仓库", "访问 https://github.com/usedare/ordknow", "返回 200，代码和报告已推送。"],
-        ["E-06", "StarUML 图表", "StarUML MCP 生成并通过本地 API 导出 PNG", "6 张核心图已嵌入报告，保留未注册水印。"],
+        ["E-06", "测试账号登录", "Chrome CDP 自动填写 test@ordknow.com / test123456 并提交", "登录表单可提交，但线上返回 fetch failed，未进入工作台。"],
+        ["E-07", "StarUML 图表", "StarUML MCP 生成并通过本地 API 导出 PNG", "6 张核心图已嵌入报告，保留未注册水印。"],
     ], [1.8, 3.0, 5.3, 5.3], caption="表 13 自动化实测证据清单", variant="evidence")
+    if "real_flow_output" in fig:
+        base.add_pic(doc, fig["real_flow_output"], "图 17 测试账号登录流程真实日志", 15.7)
+    for key, caption in [
+        ("real_01_login_before", "图 18 线上登录页初始状态截图"),
+        ("real_01_login_filled", "图 19 测试账号填写后截图"),
+        ("real_02_login_result", "图 20 登录提交后 fetch failed 结果截图"),
+    ]:
+        if key in fig:
+            base.add_pic(doc, fig[key], caption, 15.7)
     base.heading(doc, "3.2 已实测项目", 2)
     for item in [
         "类型检查与生产构建已经由命令行执行，日志和截图均进入 docs/evidence。该部分可证明项目至少在类型层和构建层没有阻塞性错误。",
         "线上首页和登录页已通过 HTTP 检查，/login 返回 200。由于根路径会进入登录保护，最终地址显示为 /login，符合当前认证设计。",
         "未登录访问受保护页面和部分接口时会被中间件导向登录页，POST 体系化接口返回 307。该结果说明线上部署已经启用认证保护。",
+        "测试账号已经用于真实登录尝试。表单填写正确，页面能把错误展示出来；失败点不是前端页面打不开，而是服务端认证请求返回 fetch failed。",
         "GitHub 仓库页面可访问，最终提交已经推送到 main 分支；StarUML 图表由 MCP 生成后导出为真实 PNG。"
     ]:
         base.bullet(doc, item)
-    base.heading(doc, "3.3 需要登录态继续验收的项目", 2)
+    base.heading(doc, "3.3 登录态实测结论", 2)
     base.callout(
         doc,
-        "未写成“已通过”的原因",
-        "素材新增、AI 解析、一键体系化、知识问答、节点重生成、JSON/Markdown 导出等核心业务流都需要 Supabase 登录态、测试账号、邮箱 Magic Link 和可用 AI Provider Key。当前没有测试账号凭证，因此报告中把这些项标记为“待登录账号/API Key 实测”，但代码路径、构建路由和接口保护已完成检查。",
+        "登录链路当前阻塞",
+        "使用测试账号提交登录后，线上页面返回 fetch failed。本地直接请求 Supabase Auth 也出现 SSL 连接失败，说明需要优先检查 Vercel 与 Supabase 的网络连通性、Supabase URL/anon key 配置，以及部署环境中 Node fetch 到 Supabase 的 TLS 行为。在这个问题修复前，报告不伪造工作台、素材页、知识页和问答页的登录态截图。",
         "info",
     )
-    base.table(doc, ["业务流", "当前可验证证据", "后续完整验收动作"], [
-        ["素材入库", "页面、API 路由和数据库表均存在；未登录保护生效。", "提供测试账号后新增一条素材，检查 materials 表和页面列表。"],
-        ["AI 解析", "analyze 路由、Prompt、AI client、错误状态处理已进入构建。", "配置 AI Key 后触发解析，检查 material_analysis 与状态变化。"],
-        ["体系化重构", "systematize 路由、topics/nodes/edges/version 写入逻辑通过构建。", "准备 analyzed 素材后执行一键体系化，检查知识树和版本快照。"],
-        ["知识问答", "qa 路由和上下文组织逻辑通过构建；未登录 POST 被保护。", "登录后输入问题，核对回答是否引用个人知识库内容。"],
-        ["导出", "export 与 export/markdown 路由在构建路由表中存在。", "登录后导出 JSON/Markdown，检查素材、节点、关系和版本是否完整。"],
-    ], [2.6, 6.0, 6.8], caption="表 14 登录态业务流验收计划", variant="plain")
+    for item in [
+        "素材入库、AI 解析、一键体系化、知识问答和导出功能的代码路径均已进入构建，但这些页面需要登录态才能继续做端到端验收。",
+        "这次补充的真实测试至少确认了两个事实：第一，登录页和表单本身存在；第二，当前阻塞发生在认证服务请求，而不是页面路由或按钮缺失。",
+        "后续修复应从 Supabase Auth 连通性开始。登录打通后，再按“新增素材—解析—体系化—问答—导出”的顺序补一轮完整截图。"
+    ]:
+        base.para(doc, item)
     base.heading(doc, "4.非功能测试", 1)
     for item in [
         "安全测试：验证未登录用户不能访问受保护接口，数据库 RLS 不允许跨用户读取。",
@@ -731,7 +897,7 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         base.bullet(doc, item)
     base.heading(doc, "6.用户使用说明", 1)
     manual = [
-        ("6.1 登录界面", ["输入邮箱。", "点击登录按钮。", "打开邮箱 Magic Link。", "完成验证后进入工作台。"]),
+        ("6.1 登录界面", ["输入邮箱。", "输入密码。", "点击登录按钮。", "认证成功后进入工作台。"]),
         ("6.2 工作台界面", ["左侧查看原始素材列表。", "中间输入或编辑当前素材。", "右侧查看 AI 体系化知识树。", "点击一键体系化生成新版知识体系。"]),
         ("6.3 素材界面", ["查看所有素材。", "使用搜索框检索素材。", "按 pending、analyzing、analyzed、failed 筛选。", "打开详情查看 AI 解析结果。"]),
         ("6.4 知识体系界面", ["展开一级主题和二级分支。", "点击知识节点查看内容。", "查看来源素材，确认 AI 输出依据。", "查看相关节点理解知识关联。"]),
@@ -740,14 +906,25 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
     ]
     for title, lines in manual:
         base.heading(doc, title, 2)
-        base.bullet(doc, "包含内容")
+        if "登录" in title:
+            base.para(doc, "用户第一次进入序知时会先看到登录页。这个页面没有额外导航和宣传内容，只保留产品名称、说明语、登录表单和注册表单。这样的处理比较直接，也符合本产品“先进入个人知识库”的使用方式。")
+        elif "工作台" in title:
+            base.para(doc, "工作台是日常使用最频繁的页面。左边看素材，中间处理当前内容，右边观察知识体系。用户不需要来回切换太多页面，就可以完成从输入到查看体系结果的大部分操作。")
+        elif "素材" in title:
+            base.para(doc, "素材界面更像原始资料柜。它保留所有输入痕迹，并通过状态、搜索和详情页帮助用户确认哪些素材已经解析，哪些还停留在待处理状态。")
+        elif "知识体系" in title:
+            base.para(doc, "知识体系界面展示的是 AI 整理后的结果。用户在这里看的不是原始碎片，而是主题、分支、节点、来源引用和关联关系。")
+        elif "问答" in title:
+            base.para(doc, "问答页用于复用知识库。它不是闲聊窗口，理想状态下应该尽量围绕用户已经存入的素材回答。")
+        else:
+            base.para(doc, "设置页承担模型、Key、导出和隐私说明等辅助能力。它不在主流程中抢戏，但会影响 AI 能否正常工作，以及用户能不能把数据带走。")
+        base.bullet(doc, "常用操作")
         for i, line in enumerate(lines, 1):
             base.numbered(doc, line, i)
-        base.bullet(doc, "功能介绍")
-        base.para(doc, f"{title} 是序知核心操作流程中的一个页面，用户可按页面提示完成对应操作。")
+        base.para(doc, "验收时应同时看页面是否能打开、按钮是否能点击、失败提示是否清楚，以及操作结果有没有真正回到个人知识库数据。")
     base.heading(doc, "7.页面功能验证记录", 1)
     page_checks = [
-        ("/login", "登录页", "检查邮箱输入框、登录按钮、Magic Link 说明和未登录入口。"),
+        ("/login", "登录页", "检查邮箱输入框、密码输入框、登录按钮、注册入口和错误提示。"),
         ("/workspace", "工作台", "检查左侧素材列表、中间素材输入/详情、右侧知识体系树。"),
         ("/materials", "素材页", "检查素材列表、搜索框、状态筛选、素材详情和 AI 解析结果。"),
         ("/knowledge", "知识体系页", "检查一级主题、二级分支、知识节点、来源素材和相关节点。"),
@@ -762,14 +939,15 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
     ]
     for idx, (route, name, check) in enumerate(page_checks, 1):
         base.heading(doc, f"7.{idx} {name}验证", 2)
-        base.table(doc, ["验证项", "说明"], [
-            ["访问路径", route],
-            ["验证目标", check],
-            ["数据准备", "使用当前 Supabase 项目、已配置环境变量和已有测试素材。"],
-            ["预期表现", "页面或接口能按权限返回结果；异常时给出明确错误提示。"],
-            ["截图要求", "最终文档中应放入本地页面或 Vercel 页面截图作为证据。"],
-        ], [3.5, 11.9], caption=f"表 13-{idx} {name}验证记录")
-        base.para(doc, f"{name}是序知系统交付验收的重要对象。验证时不仅检查页面是否能打开，还要检查它是否服务于“原始素材入库、AI 理解、体系化重构、知识复用”的核心闭环。")
+        base.para(doc, f"访问路径为 {route}。本项主要检查：{check}")
+        if route.startswith("/api"):
+            base.para(doc, "接口类验证要看三件事：未登录时是否拒绝访问，登录后是否只处理当前用户数据，异常时是否返回可读错误。课程验收时可以用浏览器网络面板或 curl 记录请求结果。")
+        elif route == "/login":
+            base.para(doc, "本次已经对线上登录页完成截图和表单提交。页面能打开，字段能填写，提交后返回 fetch failed；该错误被记录为认证链路问题。")
+        else:
+            base.para(doc, "页面类验证需要在登录成功后继续补充。当前因为认证链路阻塞，没有伪造这些页面的登录态截图。")
+        base.bullet(doc, "预期表现：页面或接口按权限返回结果；异常时给出明确提示。")
+        base.bullet(doc, "证据形式：页面截图、HTTP 状态、命令日志或数据库记录。")
     base.heading(doc, "8.GitHub 与 Vercel 部署验证", 1)
     deploy_steps = [
         ("8.1 GitHub 仓库检查", "确认远程仓库为 https://github.com/usedare/ordknow，当前分支为 main，提交内容包含项目源代码、Supabase 迁移、文档生成脚本和最终报告。"),
@@ -782,16 +960,23 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
     for title, desc in deploy_steps:
         base.heading(doc, title, 2)
         base.para(doc, desc)
-        base.table(doc, ["检查点", "内容"], [
-            ["证据形式", "命令输出截图、GitHub 页面截图、Vercel 部署页面截图或线上页面截图。"],
-            ["通过标准", "仓库可访问，构建通过，线上页面可打开，关键配置已说明。"],
-            ["记录位置", "测试报告与用户使用说明书的部署验证部分。"],
-        ], [3.5, 11.9], caption=f"表 {title.split()[0]} 部署验证记录")
+        if "GitHub" in title:
+            base.bullet(doc, "证据：GitHub 仓库页面截图和 git push 记录。")
+        elif "构建" in title:
+            base.bullet(doc, "证据：npm run lint 与 npm run build 的终端输出截图。")
+        elif "Vercel" in title or "线上" in title:
+            base.bullet(doc, "证据：ordknow.vercel.app 页面访问截图和 HTTP 检查日志。")
+        else:
+            base.bullet(doc, "证据：部署过程记录、环境变量说明和后续风险说明。")
+        base.bullet(doc, "通过标准：仓库可访问，构建通过，线上页面可打开，关键配置已说明。")
     base.heading(doc, "8.7 真实截图证据", 2)
     screenshot_specs = [
-        ("github_repo", "图 17 GitHub 仓库真实页面截图"),
-        ("vercel_home", "图 18 Vercel 线上首页真实截图"),
-        ("vercel_login", "图 19 Vercel 登录页真实截图"),
+        ("github_repo", "图 21 GitHub 仓库真实页面截图"),
+        ("vercel_home", "图 22 Vercel 线上首页真实截图"),
+        ("vercel_login", "图 23 Vercel 登录页真实截图"),
+        ("real_01_login_before", "图 24 线上登录页真实截图"),
+        ("real_01_login_filled", "图 25 测试账号填写截图"),
+        ("real_02_login_result", "图 26 测试账号提交后错误截图"),
     ]
     inserted = False
     for key, caption in screenshot_specs:
@@ -800,7 +985,7 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
             inserted = True
     staruml_keys = sorted(key for key in fig if key.startswith("staruml_"))
     for idx, key in enumerate(staruml_keys, 1):
-        base.add_pic(doc, fig[key], f"图 {19 + idx} StarUML 图表真实截图 {idx}", 15.7)
+        base.add_pic(doc, fig[key], f"图 {26 + idx} StarUML 图表真实截图 {idx}", 15.7)
         inserted = True
     if not inserted:
         base.para(doc, "当前未检测到可嵌入的页面截图文件。生成正式终稿前，应先运行页面截图流程，并将截图保存到 docs/evidence/screenshots 目录。")
@@ -814,9 +999,10 @@ def testing_manual(doc: Document, fig: dict[str, Path]) -> None:
         ["StarUML ER 图", "StarUML 当前项目", "证明数据库关系图由 StarUML 绘制。"],
         ["GitHub 仓库截图", "usedare/ordknow", "代码已上传到指定仓库。"],
         ["Vercel 线上截图", "ordknow.vercel.app", "项目已部署并可访问。"],
-        ["登录页截图", "本地或线上页面", "证明用户入口可访问。"],
-        ["登录态页面截图", "需测试账号后补截", "未嵌入真实登录态截图，避免伪造。"],
+        ["测试账号登录截图", "Chrome CDP 自动化", "证明 test@ordknow.com 表单提交后线上返回 fetch failed。"],
+        ["登录阻塞截图", "ordknow.vercel.app/login", "证明当前登录态流程卡在认证服务请求，未伪造后续页面。"],
     ], [3.8, 4.6, 7.0], caption="表 19 截图证据索引表", trailing_space=False)
+    acceptance_appendix(doc)
 
 
 def make_figures() -> dict[str, Path]:
@@ -847,17 +1033,24 @@ def make_figures() -> dict[str, Path]:
     lint_img = evidence_image("lint_output.png", "npm run lint - TypeScript 类型检查输出", OUT / "evidence" / "lint.log")
     build_img = evidence_image("build_output.png", "npm run build - Next.js 生产构建输出", OUT / "evidence" / "build.log")
     http_img = evidence_image("http_checks_output.png", "线上访问与未登录保护 HTTP 检查输出", OUT / "evidence" / "http_checks.log")
+    real_flow_img = evidence_image("real_flow_output.png", "测试账号登录流程真实日志", OUT / "evidence" / "real_flow.log")
     if lint_img:
         fig["lint_output"] = lint_img
     if build_img:
         fig["build_output"] = build_img
     if http_img:
         fig["http_checks_output"] = http_img
+    if real_flow_img:
+        fig["real_flow_output"] = real_flow_img
     screenshots = OUT / "evidence" / "screenshots"
     screenshot_files = {
         "github_repo": "github_repo.png",
         "vercel_home": "vercel_home.png",
         "vercel_login": "vercel_login.png",
+        "real_01_login_before": "real_01_login_before.png",
+        "real_01_login_filled": "real_01_login_filled.png",
+        "real_02_login_result": "real_02_login_result.png",
+        "real_error": "real_error.png",
     }
     for key, filename in screenshot_files.items():
         path = screenshots / filename
