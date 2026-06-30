@@ -1,41 +1,56 @@
+/**
+ * AI 模型客户端
+ *
+ * 这个文件的作用：统一管理 AI 模型（目前是 DeepSeek）的调用方式。
+ * 其他地方需要调用 AI 时，只需调用 getAIClient() 即可，不用关心底层细节。
+ *
+ * 用户可以在设置页选择不同模型（如 DeepSeek V3 或 R1），
+ * 也可以填写自己的 API Key 来覆盖系统默认 Key。
+ */
+
 import OpenAI from "openai";
 
-export type AIProvider = "deepseek" | "mimo";
+// 当前支持的 AI 服务商
+export type AIProvider = "deepseek";
 
-interface ProviderConfig {
-  baseURL: string;
-  apiKey: string;
-  defaultModel: string;
+// 用户可以在请求中临时覆盖 API Key（用于"自带 Key"场景）
+export interface AIKeyOverrides {
+  deepseek?: string;
 }
 
+// 每个 AI 服务商的连接信息
+interface ProviderConfig {
+  baseURL: string;   // API 地址
+  apiKey: string;    // 认证密钥
+  defaultModel: string; // 默认使用的模型名
+}
+
+// 已注册的 AI 服务商配置表
 const PROVIDERS: Record<AIProvider, ProviderConfig> = {
   deepseek: {
     baseURL: "https://api.deepseek.com",
     apiKey: process.env.DEEPSEEK_API_KEY || "",
     defaultModel: "deepseek-chat",
   },
-  mimo: {
-    baseURL: process.env.MIMO_BASE_URL || "https://token-plan-cn.xiaomimimo.com/v1",
-    apiKey: process.env.MIMO_API_KEY || "",
-    defaultModel: "mimo-v2.5",
-  },
 };
 
+// 模型描述（用于设置页的模型选择器）
 export interface ModelOption {
-  id: string;
-  name: string;
-  provider: AIProvider;
-  description: string;
-  supportsMultimodal: boolean;
+  id: string;              // 模型唯一标识
+  name: string;            // 显示名称
+  provider: AIProvider;    // 所属服务商
+  description: string;     // 功能描述
+  supportsMultimodal: boolean; // 是否支持识别图片
 }
 
+// 可供用户选择的模型列表
 export const AVAILABLE_MODELS: ModelOption[] = [
   {
     id: "deepseek-chat",
     name: "DeepSeek Chat (V3)",
     provider: "deepseek",
     description: "快速、性价比高",
-    supportsMultimodal: false,
+    supportsMultimodal: false, // DeepSeek 不支持图片识别
   },
   {
     id: "deepseek-reasoner",
@@ -44,34 +59,36 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     description: "推理能力强，速度较慢",
     supportsMultimodal: false,
   },
-  {
-    id: "mimo-v2.5",
-    name: "MiMo V2.5",
-    provider: "mimo",
-    description: "通用场景，支持多模态",
-    supportsMultimodal: true,
-  },
-  {
-    id: "mimo-v2.5-pro",
-    name: "MiMo V2.5 Pro",
-    provider: "mimo",
-    description: "旗舰模型，多模态，推理能力强",
-    supportsMultimodal: true,
-  },
 ];
 
-export function getAIClient(modelId?: string): { client: OpenAI; model: string } {
+/**
+ * 获取 AI 客户端
+ *
+ * 这是整个项目中调用 AI 的统一入口。
+ * 根据用户选择的模型，返回对应的客户端和模型名称。
+ *
+ * 使用方式：
+ *   const { client, model } = getAIClient("deepseek-chat");
+ *   const result = await client.chat.completions.create({ model, messages: [...] });
+ */
+export function getAIClient(
+  modelId?: string,
+  keyOverrides: AIKeyOverrides = {}
+): { client: OpenAI; model: string } {
+  // 确定要使用的模型（默认 deepseek-chat）
   const model = modelId || "deepseek-chat";
   const modelOption = AVAILABLE_MODELS.find((m) => m.id === model);
   const provider = modelOption?.provider || "deepseek";
   const config = PROVIDERS[provider];
 
-  // Allow override via env vars (for user-provided keys)
-  const apiKey =
-    provider === "mimo"
-      ? process.env.MIMO_API_KEY || config.apiKey
-      : process.env.DEEPSEEK_API_KEY || config.apiKey;
+  // 优先使用用户自带的 Key，其次使用环境变量中的系统 Key
+  const apiKey = keyOverrides.deepseek || process.env.DEEPSEEK_API_KEY || config.apiKey;
 
+  if (!apiKey) {
+    throw new Error("缺少 DeepSeek API Key，请在设置页填写或配置环境变量");
+  }
+
+  // 创建 OpenAI 兼容的客户端（DeepSeek 的 API 和 OpenAI 格式兼容）
   const client = new OpenAI({
     baseURL: config.baseURL,
     apiKey,

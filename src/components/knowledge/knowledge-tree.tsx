@@ -11,6 +11,16 @@ interface KnowledgeTreeProps {
   selectedNodeId?: string;
 }
 
+/**
+ * 知识树组件。
+ *
+ * 数据结构对应数据库：
+ * - KnowledgeTopic level=1：一级主题
+ * - KnowledgeTopic level=2：二级分支
+ * - KnowledgeNode：具体知识节点
+ *
+ * 组件本身只负责展示和选择节点，不负责修改数据。
+ */
 export function KnowledgeTree({ topics, onNodeSelect, selectedNodeId }: KnowledgeTreeProps) {
   if (!topics || topics.length === 0) {
     return (

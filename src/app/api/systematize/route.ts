@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { systematizeMaterials } from "@/lib/ai/systematize";
+import { getAIKeyOverrides } from "@/lib/ai/request";
+
+/**
+ * 体系化 API：序知的核心闭环。
+ *
+ * 它不是“总结全文”，而是把已经解析过的素材重新编译成：
+ * - knowledge_topics：一级/二级主题
+ * - knowledge_nodes：具体知识节点
+ * - node_material_links：节点到原始素材的证据引用
+ * - knowledge_edges：节点之间的知识关联
+ * - knowledge_versions：本次重构快照
+ *
+ * 当前策略是全量重建：每次“一键体系化”都会清空当前用户旧知识网络，再写入新版。
+ * 这样实现简单、可控，适合 MVP；后续可以升级为增量合并。
+ */
 
 // POST /api/systematize - Trigger knowledge systematization
 export async function POST(request: NextRequest) {
@@ -13,6 +28,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const { model } = body;
+  const aiKeys = getAIKeyOverrides(request);
 
   // Create reconstruction job
   const { data: job, error: jobError } = await supabase
@@ -31,7 +47,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get all analyzed materials with their analysis
+    // 只使用“已解析”的素材进行体系化，避免把未理解的原始噪声直接送入重构层。
     const { data: materials, error: materialsError } = await supabase
       .from("materials")
       .select(`
@@ -68,10 +84,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Limit to 100 materials for MVP
+    // MVP 阶段限制一次重构的素材数量，避免上下文过长导致模型失败或成本失控。
     const materialsToProcess = materials.slice(0, 100);
 
-    // Build materials data string for AI
+    // 将原始素材和理解层结果编译成模型输入，来源 ID 会被要求回填到知识节点。
     const materialsData = materialsToProcess.map((m, index) => {
       const analysis = Array.isArray(m.material_analysis)
         ? m.material_analysis[0]
@@ -89,12 +105,11 @@ ${analysis ? `
 ---`;
     }).join("\n\n");
 
-    // Call AI to systematize
-    const result = await systematizeMaterials(materialsData, model);
+    const result = await systematizeMaterials(materialsData, model, aiKeys);
 
-    // Delete existing knowledge for this user (fresh rebuild)
+    // 当前实现采用“全量重建”：先清空当前用户的知识网络，再写入新版主题树。
+    // node_material_links 会随 knowledge_nodes 级联删除，不需要单独按假条件删除。
     await supabase.from("knowledge_edges").delete().eq("user_id", user.id);
-    await supabase.from("node_material_links").delete().eq("node_id" as string, "").in("material_id", materialsToProcess.map((m) => m.id));
     await supabase.from("knowledge_nodes").delete().eq("user_id", user.id);
     await supabase.from("knowledge_topics").delete().eq("user_id", user.id);
 
@@ -109,8 +124,9 @@ ${analysis ? `
 
     const nextVersionNumber = (lastVersion?.version_number || 0) + 1;
 
-    // Save topics and nodes
+    // 按“一级主题 → 二级分支 → 知识节点 → 来源引用”的顺序落库。
     for (const topic of result.topics) {
+      // 一级主题：例如“Python 学习”“工作复盘”“产品思考”。
       const { data: topicRecord, error: topicError } = await supabase
         .from("knowledge_topics")
         .insert({
@@ -126,6 +142,7 @@ ${analysis ? `
       if (topicError) throw topicError;
 
       for (const child of topic.children || []) {
+        // 二级分支：一级主题下面的具体维度，例如“基础语法”“项目经验”。
         const { data: childRecord, error: childError } = await supabase
           .from("knowledge_topics")
           .insert({
@@ -142,6 +159,7 @@ ${analysis ? `
         if (childError) throw childError;
 
         for (const node of child.nodes || []) {
+          // 知识节点：用户真正阅读和复用的最小知识单元。
           const { data: nodeRecord, error: nodeError } = await supabase
             .from("knowledge_nodes")
             .insert({
@@ -157,7 +175,7 @@ ${analysis ? `
 
           if (nodeError) throw nodeError;
 
-          // Create material links
+          // 每个知识节点都必须保留来源素材引用，这是防止 AI 编造的核心约束。
           if (node.source_material_ids && node.source_material_ids.length > 0) {
             const links = node.source_material_ids.map((materialId: string) => ({
               node_id: nodeRecord.id,
@@ -171,18 +189,7 @@ ${analysis ? `
       }
     }
 
-    // Build edges: connect nodes that share source materials
-    const allNodes: Array<{ id: string; source_material_ids: string[] }> = [];
-    for (const topic of result.topics) {
-      for (const child of topic.children || []) {
-        for (const node of child.nodes || []) {
-          // We need to find the nodeRecord ID - collect during creation
-          // For now, query all nodes we just created
-        }
-      }
-    }
-
-    // Query all nodes we just created to build edges
+    // 基于共同来源素材自动建立 related 边，先实现稳定的知识网络最小闭环。
     const { data: createdNodes } = await supabase
       .from("knowledge_nodes")
       .select("id, topic_id")
@@ -193,7 +200,7 @@ ${analysis ? `
       .select("node_id, material_id");
 
     if (createdNodes && createdLinks) {
-      // Build material → nodes mapping
+      // material → nodes 映射：同一条素材支撑多个节点时，这些节点天然相关。
       const materialToNodes = new Map<string, string[]>();
       for (const link of createdLinks) {
         const nodes = materialToNodes.get(link.material_id) || [];

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 interface HealthIssue {
-  type: "duplicate" | "orphan" | "no_source";
+  type: "duplicate" | "orphan" | "empty_content";
   severity: "warning" | "info";
   title: string;
   description: string;
@@ -20,10 +20,10 @@ export async function GET() {
 
   const issues: HealthIssue[] = [];
 
-  // 1. Check for duplicate nodes (nodes with same title under same topic)
+  // 1. 检查同一主题下的重复标题节点，提示用户合并或重命名。
   const { data: nodes } = await supabase
     .from("knowledge_nodes")
-    .select("id, title, topic_id")
+    .select("id, title, topic_id, content")
     .eq("user_id", user.id);
 
   if (nodes) {
@@ -48,7 +48,7 @@ export async function GET() {
     }
   }
 
-  // 2. Check for orphan nodes (nodes without any source materials)
+  // 2. 检查没有来源素材的节点。序知要求 AI 输出必须能追溯到原始素材。
   const { data: links } = await supabase
     .from("node_material_links")
     .select("node_id");
@@ -68,12 +68,18 @@ export async function GET() {
     }
   }
 
-  // 3. Check for nodes without content
+  // 3. 检查空内容节点。这类节点通常来自 AI 输出不完整或人工编辑误删。
   if (nodes) {
-    const emptyNodes = nodes.filter((n) => {
-      // We'd need to check content field, but we only selected id/title/topic_id
-      // Skip this check for now
-    });
+    const emptyNodes = nodes.filter((n) => !n.content || !n.content.trim());
+    if (emptyNodes.length > 0) {
+      issues.push({
+        type: "empty_content",
+        severity: "info",
+        title: "空内容节点",
+        description: `发现 ${emptyNodes.length} 个没有正文内容的节点`,
+        node_ids: emptyNodes.map((n) => n.id),
+      });
+    }
   }
 
   return NextResponse.json({

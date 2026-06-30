@@ -1,9 +1,19 @@
 import { getAIClient } from "./client";
 import { SYSTEMATIZE_SYSTEM_PROMPT, SYSTEMATIZE_USER_PROMPT } from "./prompts";
 import { SystematizeResult } from "@/types";
+import { AIKeyOverrides } from "./client";
 
-export async function systematizeMaterials(materialsData: string, modelId?: string): Promise<SystematizeResult> {
-  const { client, model } = getAIClient(modelId);
+/**
+ * 全库体系化重构。
+ *
+ * 输入是“原始素材 + 单条解析结果”的文本包，输出是可落库的主题树 JSON。
+ */
+export async function systematizeMaterials(
+  materialsData: string,
+  modelId?: string,
+  keyOverrides?: AIKeyOverrides
+): Promise<SystematizeResult> {
+  const { client, model } = getAIClient(modelId, keyOverrides);
 
   const response = await client.chat.completions.create({
     model,

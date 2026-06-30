@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { KnowledgeTopic, KnowledgeNode, Material } from "@/types";
+import { KnowledgeTopic, KnowledgeNode, KnowledgeEdge, Material } from "@/types";
 import { KnowledgeTree } from "@/components/knowledge/knowledge-tree";
 import { KnowledgeNodeDetail } from "@/components/knowledge/knowledge-node-detail";
+import { KnowledgeGraph } from "@/components/knowledge/knowledge-graph";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, AlertTriangle, Info } from "lucide-react";
+import { Activity, AlertTriangle, Info, GitBranch } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { getAIRequestHeaders } from "@/lib/client-ai-config";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 interface HealthIssue {
-  type: "duplicate" | "orphan" | "no_source";
+  type: "duplicate" | "orphan" | "empty_content";
   severity: "warning" | "info";
   title: string;
   description: string;
@@ -24,28 +27,57 @@ interface HealthReport {
   is_healthy: boolean;
 }
 
+/**
+ * 知识体系页面。
+ *
+ * 这个页面展示 AI 已经“编译”出来的知识网络：
+ * - 左侧可以在树状结构和图谱结构之间切换。
+ * - 右侧显示选中知识节点的正文、摘要、相关节点和来源素材。
+ * - “健康检查”用于发现重复节点、无来源节点、空内容节点。
+ */
 export default function KnowledgePage() {
   const { toast } = useToast();
+  // topics 用于树状视图；allNodes + edges 用于图谱视图。
   const [topics, setTopics] = useState<Array<KnowledgeTopic & { children?: Array<KnowledgeTopic & { nodes?: KnowledgeNode[] }> }>>([]);
+  const [allNodes, setAllNodes] = useState<KnowledgeNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
   const [sourceMaterials, setSourceMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSystematizing, setIsSystematizing] = useState(false);
   const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [edges, setEdges] = useState<KnowledgeEdge[]>([]);
+  const [viewMode, setViewMode] = useState<"tree" | "graph">("tree");
 
   const fetchKnowledge = useCallback(async () => {
     try {
-      const res = await fetch("/api/knowledge");
-      if (res.ok) {
-        const data = await res.json();
+      // 三个接口并行加载。使用 allSettled 是为了避免某个图谱接口慢，
+      // 导致整个知识体系页一直停在“加载中”。
+      const [topicsRes, edgesRes, nodesRes] = await Promise.allSettled([
+        fetchWithTimeout("/api/knowledge"),
+        fetchWithTimeout("/api/knowledge/edges/all"),
+        fetchWithTimeout("/api/knowledge/nodes/all"),
+      ]);
+
+      if (topicsRes.status === "fulfilled" && topicsRes.value.ok) {
+        const data = await topicsRes.value.json();
         setTopics(data);
+      }
+      if (edgesRes.status === "fulfilled" && edgesRes.value.ok) {
+        const data = await edgesRes.value.json();
+        setEdges(data);
+      }
+      if (nodesRes.status === "fulfilled" && nodesRes.value.ok) {
+        const data = await nodesRes.value.json();
+        setAllNodes(data);
       }
     } catch (err) {
       console.error("Failed to fetch knowledge:", err);
+      toast("知识体系加载失败，请稍后重试", "error");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchKnowledge();
@@ -56,11 +88,11 @@ export default function KnowledgePage() {
     toast("正在生成知识体系，可能需要一些时间...", "info");
     try {
       const model = localStorage.getItem("ordknow_model") || "deepseek-chat";
-      const res = await fetch("/api/systematize", {
+      const res = await fetchWithTimeout("/api/systematize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAIRequestHeaders(),
         body: JSON.stringify({ model }),
-      });
+      }, 120000);
       if (res.ok) {
         await fetchKnowledge();
         toast("知识体系生成完成！", "success");
@@ -77,7 +109,7 @@ export default function KnowledgePage() {
   const handleHealthCheck = async () => {
     setIsChecking(true);
     try {
-      const res = await fetch("/api/knowledge/health");
+      const res = await fetchWithTimeout("/api/knowledge/health");
       if (res.ok) {
         const data = await res.json();
         setHealthReport(data);
@@ -96,7 +128,8 @@ export default function KnowledgePage() {
   const handleNodeSelect = async (node: KnowledgeNode) => {
     setSelectedNode(node);
     try {
-      const res = await fetch(`/api/knowledge/node/${node.id}/materials`);
+      // 选中节点后再加载来源素材，减少初次进入页面的数据量。
+      const res = await fetchWithTimeout(`/api/knowledge/node/${node.id}/materials`);
       if (res.ok) {
         const data = await res.json();
         setSourceMaterials(data);
@@ -104,6 +137,12 @@ export default function KnowledgePage() {
     } catch (err) {
       console.error("Failed to fetch source materials:", err);
     }
+  };
+
+  const handleNodeUpdate = (updated: KnowledgeNode) => {
+    setSelectedNode(updated);
+    // Refresh the knowledge tree
+    fetchKnowledge();
   };
 
   if (isLoading) {
@@ -122,6 +161,15 @@ export default function KnowledgePage() {
             <h2 className="font-semibold">知识体系</h2>
             <Button size="sm" onClick={handleSystematize} disabled={isSystematizing}>
               {isSystematizing ? "体系化中..." : "一键体系化"}
+            </Button>
+          </div>
+          <div className="flex gap-1 mb-2">
+            <Button size="sm" variant={viewMode === "tree" ? "default" : "outline"} onClick={() => setViewMode("tree")} className="flex-1">
+              树状
+            </Button>
+            <Button size="sm" variant={viewMode === "graph" ? "default" : "outline"} onClick={() => setViewMode("graph")} className="flex-1">
+              <GitBranch className="w-3.5 h-3.5 mr-1" />
+              图谱
             </Button>
           </div>
           <Button size="sm" variant="outline" onClick={handleHealthCheck} disabled={isChecking} className="w-full">
@@ -158,13 +206,17 @@ export default function KnowledgePage() {
         )}
 
         <div className="flex-1 overflow-auto p-2">
-          <KnowledgeTree topics={topics} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNode?.id} />
+          {viewMode === "tree" ? (
+            <KnowledgeTree topics={topics} onNodeSelect={handleNodeSelect} selectedNodeId={selectedNode?.id} />
+          ) : (
+            <KnowledgeGraph nodes={allNodes} edges={edges} onNodeClick={handleNodeSelect} />
+          )}
         </div>
       </div>
 
       <div className="flex-1 overflow-auto p-6">
         {selectedNode ? (
-          <KnowledgeNodeDetail node={selectedNode} sourceMaterials={sourceMaterials} onNodeSelect={handleNodeSelect} />
+          <KnowledgeNodeDetail node={selectedNode} sourceMaterials={sourceMaterials} onNodeSelect={handleNodeSelect} onNodeUpdate={handleNodeUpdate} />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">选择一个知识节点查看详情</div>
         )}

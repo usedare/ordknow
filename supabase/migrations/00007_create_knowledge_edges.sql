@@ -1,4 +1,6 @@
--- Knowledge Edges: relationships between knowledge nodes
+-- Knowledge Edges: 知识节点之间的关系
+-- 这是 Karpathy 式“知识网络”的基础表。
+-- 例如：A 是 B 的前置知识、A 支撑 B、A 与 B 矛盾、A 是 B 的例子。
 CREATE TABLE knowledge_edges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -29,10 +31,10 @@ CREATE POLICY "Users can delete own edges"
   ON knowledge_edges FOR DELETE
   USING (auth.uid() = user_id);
 
--- Prevent duplicate edges
+-- 防止同一对节点重复建立同类型边。
 CREATE UNIQUE INDEX idx_edges_unique ON knowledge_edges (source_node_id, target_node_id, edge_type);
 
--- Index for querying edges by node
+-- 图谱和节点详情页会频繁按 source/target 查边。
 CREATE INDEX idx_edges_source ON knowledge_edges (source_node_id);
 CREATE INDEX idx_edges_target ON knowledge_edges (target_node_id);
 CREATE INDEX idx_edges_user ON knowledge_edges (user_id);

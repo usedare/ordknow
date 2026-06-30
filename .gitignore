@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files
 .env*.local
+.env.vercel
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +40,20 @@ next-env.d.ts
 
 # supabase
 supabase/.temp
+
+# AI tool traces
+.claude/
+.playwright-mcp/
+.vercel
+.tmp-chrome-profile/
+.tmp-chrome-record-profile/
+AGENTS.md
+
+# project docs & tools (not source code)
+/docs/
+/tools/
+/tmp/
+/experiments/
+/report_samples/
+.env.vercel
+序知_工程版PRD与技术路线.md

@@ -3,6 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 import { analyzeMaterial } from "@/lib/ai/analyze";
 import { generateEmbeddings } from "@/lib/embeddings/client";
 import { chunkText } from "@/lib/embeddings/chunk";
+import { getAIKeyOverrides, getEmbeddingKeyOverride } from "@/lib/ai/request";
+
+/**
+ * 素材解析 API：把一条 raw material 变成“可被体系化使用的理解层数据”。
+ *
+ * 完整流程：
+ * 1. 校验登录用户，并读取该用户自己的素材。
+ * 2. 将素材状态改为 analyzing。
+ * 3. 并行执行两件事：
+ *    - 调用大模型生成结构化解析，写入 material_analysis。
+ *    - 将长文本切块并生成 embedding，写入 material_chunks。
+ * 4. 成功后标记 analyzed；失败后标记 failed。
+ *
+ * 注意：embedding 是增强能力，失败时不会阻断 AI 解析。
+ */
 
 // POST /api/analyze - Analyze a single material with AI
 export async function POST(request: NextRequest) {
@@ -15,6 +30,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { material_id, model } = body;
+  const aiKeys = getAIKeyOverrides(request);
+  const embeddingKey = getEmbeddingKeyOverride(request);
 
   if (!material_id) {
     return NextResponse.json({ error: "material_id is required" }, { status: 400 });
@@ -39,16 +56,10 @@ export async function POST(request: NextRequest) {
     .eq("id", material_id);
 
   try {
-    // Run embedding and analysis in parallel
-    const [analysisResult] = await Promise.all([
-      // AI Analysis
-      analyzeMaterial(material.raw_content, model),
-
-      // Generate embeddings and save chunks
-      (async () => {
+    const embeddingTask = (async () => {
         const chunks = chunkText(material.raw_content);
         if (chunks.length > 0) {
-          const embeddings = await generateEmbeddings(chunks);
+          const embeddings = await generateEmbeddings(chunks, embeddingKey);
 
           // Delete existing chunks (in case of re-analysis)
           await supabase
@@ -67,10 +78,18 @@ export async function POST(request: NextRequest) {
 
           await supabase.from("material_chunks").insert(chunkRecords);
         }
-      })(),
+    })().catch((error) => {
+      // 向量是增强能力；缺少 embedding 配置时，不应阻断基础 AI 解析闭环。
+      console.warn("Embedding generation skipped:", error);
+    });
+
+    // AI 解析和向量生成互不依赖，可以并行执行以降低等待时间。
+    const [analysisResult] = await Promise.all([
+      analyzeMaterial(material.raw_content, model, aiKeys),
+      embeddingTask,
     ]);
 
-    // Delete existing analysis (in case of re-analysis)
+    // 重复解析时先删除旧理解层结果，保证每条素材只有最新解析版本。
     await supabase
       .from("material_analysis")
       .delete()

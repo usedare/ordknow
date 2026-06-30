@@ -9,49 +9,47 @@ import { Badge } from "@/components/ui/badge";
 const AI_MODELS = [
   { value: "deepseek-chat", label: "DeepSeek Chat (V3)", provider: "DeepSeek", description: "快速、性价比高", multimodal: false },
   { value: "deepseek-reasoner", label: "DeepSeek Reasoner (R1)", provider: "DeepSeek", description: "推理能力强，速度较慢", multimodal: false },
-  { value: "mimo-v2.5", label: "MiMo V2.5", provider: "小米", description: "通用场景，支持多模态", multimodal: true },
-  { value: "mimo-v2.5-pro", label: "MiMo V2.5 Pro", provider: "小米", description: "旗舰模型，多模态，推理能力强", multimodal: true },
 ];
 
 export function SettingsPage() {
   const [deepseekKey, setDeepseekKey] = useState("");
-  const [jinaKey, setJinaKey] = useState("");
-  const [mimoKey, setMimoKey] = useState("");
+  const [siliconflowKey, setSiliconflowKey] = useState("");
   const [selectedModel, setSelectedModel] = useState("deepseek-chat");
   const [isExporting, setIsExporting] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load saved settings
+    // API Key 仅保存在当前浏览器 localStorage；服务端不会持久化用户私钥。
     setDeepseekKey(localStorage.getItem("ordknow_deepseek_key") || "");
-    setJinaKey(localStorage.getItem("ordknow_jina_key") || "");
-    setMimoKey(localStorage.getItem("ordknow_mimo_key") || "");
+    setSiliconflowKey(localStorage.getItem("ordknow_siliconflow_key") || "");
     setSelectedModel(localStorage.getItem("ordknow_model") || "deepseek-chat");
   }, []);
 
   const handleSave = () => {
+    // 保存后，AI 请求会通过自定义请求头把 Key 临时传给后端使用。
     localStorage.setItem("ordknow_deepseek_key", deepseekKey);
-    localStorage.setItem("ordknow_jina_key", jinaKey);
-    localStorage.setItem("ordknow_mimo_key", mimoKey);
+    localStorage.setItem("ordknow_siliconflow_key", siliconflowKey);
     localStorage.setItem("ordknow_model", selectedModel);
     setSaveMessage("配置已保存");
     setTimeout(() => setSaveMessage(null), 2000);
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: "json" | "markdown") => {
     setIsExporting(true);
     try {
-      const res = await fetch("/api/export");
+      const url = format === "json" ? "/api/export" : "/api/export/markdown";
+      const ext = format === "json" ? "json" : "md";
+      const res = await fetch(url);
       if (res.ok) {
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+        const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
-        a.download = `ordknow-export-${new Date().toISOString().split("T")[0]}.json`;
+        a.href = blobUrl;
+        a.download = `ordknow-export-${new Date().toISOString().split("T")[0]}.${ext}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(blobUrl);
       }
     } catch (err) {
       console.error("Export failed:", err);
@@ -68,7 +66,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>API 配置</CardTitle>
           <CardDescription>
-            配置 AI 服务的 API Key。留空则使用系统默认配置。
+            配置 AI 服务的 API Key。留空则使用系统默认配置；用户 Key 仅保存在当前浏览器。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -82,21 +80,12 @@ export function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">小米 MiMo API Key</label>
+            <label className="text-sm font-medium">SiliconFlow API Key（Embedding）</label>
             <Input
               type="password"
               placeholder="sk-..."
-              value={mimoKey}
-              onChange={(e) => setMimoKey(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Jina API Key（Embedding）</label>
-            <Input
-              type="password"
-              placeholder="jina_..."
-              value={jinaKey}
-              onChange={(e) => setJinaKey(e.target.value)}
+              value={siliconflowKey}
+              onChange={(e) => setSiliconflowKey(e.target.value)}
             />
           </div>
           <Button onClick={handleSave}>
@@ -163,9 +152,12 @@ export function SettingsPage() {
             导出你的所有素材和知识体系数据。
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+        <CardContent className="flex gap-2">
+          <Button variant="outline" onClick={() => handleExport("json")} disabled={isExporting}>
             {isExporting ? "导出中..." : "导出 JSON"}
+          </Button>
+          <Button variant="outline" onClick={() => handleExport("markdown")} disabled={isExporting}>
+            {isExporting ? "导出中..." : "导出 Markdown"}
           </Button>
         </CardContent>
       </Card>

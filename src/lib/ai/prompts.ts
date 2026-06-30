@@ -1,3 +1,8 @@
+/**
+ * 单条素材解析 Prompt。
+ *
+ * 目标是把无序输入压成稳定 JSON，不做扩写和外部补充。
+ */
 export const MATERIAL_ANALYSIS_SYSTEM_PROMPT = `你是"序知"的知识解析引擎。
 你的任务不是聊天，不是扩写，不是创作。
 你只能基于用户提供的原始素材，提取其中真实存在的知识信息。
@@ -19,6 +24,11 @@ ${rawContent}
 - keywords: 关键词列表（数组）
 - related_hints: 可能关联的方向列表（数组）`;
 
+/**
+ * 全库体系化 Prompt。
+ *
+ * 这是“序知”的核心：把多条素材和解析结果重构成可落库的知识体系。
+ */
 export const SYSTEMATIZE_SYSTEM_PROMPT = `你是"序知"的个人知识体系重构引擎。
 
 你的唯一任务是：
